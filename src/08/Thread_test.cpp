@@ -36,13 +36,14 @@ int main(void)
 	t.Start();
 
 	t.Join();
+	// 至此t2线程已经执行完毕，但是t2对象仍然存在，即线程对象的生命周期和线程的生命周期是不一样的
 	*/
 
 	TestThread* t2 = new TestThread(5);
 	t2->SetAutoDelete(true);
 	t2->Start();
 	t2->Join();
-
+	// 线程对象自动销毁：动态创建对象
 	for (; ; )
 		pause();
 

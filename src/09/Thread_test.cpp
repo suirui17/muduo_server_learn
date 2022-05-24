@@ -55,6 +55,8 @@ int main(void)
 	Thread t3(boost::bind(&Foo::MemberFun, &foo));
 	Foo foo2(3);
 	Thread t4(boost::bind(&Foo::MemberFun2, &foo2, 1000));
+	// 绑定成员函数，&不能省略；绑定普通函数&可以省略
+	// Foo::MemberFun2第一个隐含参数时this
 
 	t1.Start();
 	t2.Start();

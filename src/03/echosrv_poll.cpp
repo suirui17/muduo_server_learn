@@ -36,7 +36,8 @@ int main(void)
 	//if ((listenfd = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
 	if ((listenfd = socket(PF_INET, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, IPPROTO_TCP)) < 0)
 		ERR_EXIT("socket");
-
+	// SOCK_NONBLOCK 非阻塞 
+	// SOCK_CLOEXEC进程替换时，该描述符是关闭的
 	struct sockaddr_in servaddr;
 	memset(&servaddr, 0, sizeof(servaddr));
 	servaddr.sin_family = AF_INET;
@@ -54,10 +55,10 @@ int main(void)
 
 	struct pollfd pfd;
 	pfd.fd = listenfd;
-	pfd.events = POLLIN;
+	pfd.events = POLLIN; // 关注pollin事件：有数据可读
 
 	PollFdList pollfds;
-	pollfds.push_back(pfd);
+	pollfds.push_back(pfd); // c++ 11 pollfds.data()
 
 	int nready;
 
@@ -67,7 +68,7 @@ int main(void)
 
 	while (1)
 	{
-		nready = poll(&*pollfds.begin(), pollfds.size(), -1);
+		nready = poll(&*pollfds.begin(), pollfds.size(), -1); // 不设置超时，直到发生事件才返回
 		if (nready == -1)
 		{
 			if (errno == EINTR)
@@ -88,6 +89,7 @@ int main(void)
 				ERR_EXIT("accept4");
 
 /*
+			// EMFILE的推荐处理方式
 			if (connfd == -1)
 			{
 				if (errno == EMFILE)
@@ -109,7 +111,7 @@ int main(void)
 			pollfds.push_back(pfd);
 			--nready;
 
-			// ���ӳɹ�
+			// 连接成功
 			std::cout<<"ip="<<inet_ntoa(peeraddr.sin_addr)<<
 				" port="<<ntohs(peeraddr.sin_port)<<std::endl;
 			if (nready == 0)
@@ -129,7 +131,7 @@ int main(void)
 					int ret = read(connfd, buf, 1024);
 					if (ret == -1)
 						ERR_EXIT("read");
-					if (ret == 0)
+					if (ret == 0) // 客户端调用close
 					{
 						std::cout<<"client close"<<std::endl;
 						it = pollfds.erase(it);
@@ -148,4 +150,14 @@ int main(void)
 
 	return 0;
 }
+
+/* 问题1
+ * read可能并没有将connfd对应的接收缓冲区中的数据全部读完，那么connfd依然是活跃的
+ * 应该将数据保存在connfd的应用层接收缓冲区
+ * 问题2
+ * 内核发送缓冲区满时，write不会阻塞（非阻塞套接字）
+ * 应用层应该有发送缓冲区，当内核中发送缓冲区满时，将数据写入应用层发送缓冲区
+ * 关注pollout事件（内核发送缓冲区可写），将应用层发送缓冲区的数据拷贝到内核发送缓冲区
+ * 数据都发送完毕，取消关注pollout事件
+ */
 

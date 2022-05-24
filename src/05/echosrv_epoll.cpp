@@ -56,12 +56,16 @@ int main(void)
 	std::vector<int> clients;
 	int epollfd;
 	epollfd = epoll_create1(EPOLL_CLOEXEC);
+	// epoll_create1相当于调用epoll_create
+	// 再调用fcntl，并指定FD_CLOEXEC
 
 	struct epoll_event event;
 	event.data.fd = listenfd;
-	event.events = EPOLLIN/* | EPOLLET*/;
+	event.events = EPOLLIN/* | EPOLLET*/; // 默认为EPOLLLT 电平触发模式
 	epoll_ctl(epollfd, EPOLL_CTL_ADD, listenfd, &event);
-	
+	// 以上数据为应用层管理
+
+	// 以下数据为内核管理
 	EventList events(16);
 	struct sockaddr_in peeraddr;
 	socklen_t peerlen;
@@ -71,6 +75,8 @@ int main(void)
 	while (1)
 	{
 		nready = epoll_wait(epollfd, &*events.begin(), static_cast<int>(events.size()), -1);
+		// 第二个参数为输出参数，用来存储返回事件
+		// 没有将关注事件拷贝到内核，所以epoll效率更高
 		if (nready == -1)
 		{
 			if (errno == EINTR)
@@ -81,7 +87,7 @@ int main(void)
 		if (nready == 0)	// nothing happended
 			continue;
 
-		if ((size_t)nready == events.size())
+		if ((size_t)nready == events.size()) // 返回事件数组大小可能不够
 			events.resize(events.size()*2);
 
 		for (int i = 0; i < nready; ++i)
@@ -114,7 +120,7 @@ int main(void)
 				
 				event.data.fd = connfd;
 				event.events = EPOLLIN/* | EPOLLET*/;
-				epoll_ctl(epollfd, EPOLL_CTL_ADD, connfd, &event);
+				epoll_ctl(epollfd, EPOLL_CTL_ADD, connfd, &event); // 已连接的套接字加入关注
 			}
 			else if (events[i].events & EPOLLIN)
 			{
@@ -131,7 +137,7 @@ int main(void)
 					std::cout<<"client close"<<std::endl;
 					close(connfd);
 					event = events[i];
-					epoll_ctl(epollfd, EPOLL_CTL_DEL, connfd, &event);
+					epoll_ctl(epollfd, EPOLL_CTL_DEL, connfd, &event); // 移除关闭套接字
 					clients.erase(std::remove(clients.begin(), clients.end(), connfd), clients.end());
 					continue;
 				}
