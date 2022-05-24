@@ -17,6 +17,7 @@ namespace muduo
 ///
 class Timestamp : public muduo::copyable,
                   public boost::less_than_comparable<Timestamp>
+                  // 继承boost::less_than_comparable<Timestamp>要求实现＜操作符，自动推导出＞，≤，≥
 {
  public:
   ///
@@ -36,6 +37,7 @@ class Timestamp : public muduo::copyable,
   void swap(Timestamp& that)
   {
     std::swap(microSecondsSinceEpoch_, that.microSecondsSinceEpoch_);
+    // 形参是引用
   }
 
   // default copy/assignment/dtor are Okay

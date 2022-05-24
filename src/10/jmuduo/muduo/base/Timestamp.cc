@@ -11,6 +11,8 @@
 using namespace muduo;
 
 BOOST_STATIC_ASSERT(sizeof(Timestamp) == sizeof(int64_t));
+// 编译时断言
+// 平时用的assert用的是运行时断言
 
 Timestamp::Timestamp(int64_t microseconds)
   : microSecondsSinceEpoch_(microseconds)
