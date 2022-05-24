@@ -25,6 +25,7 @@ library/framework
 基于对象编程风格不会暴露抽象类，只是用具体类
 
 基于对象的方法实现server
+
 ![](object_based.png)
 
 c++ 可以使用boost bind/function（类似于函数适配器）
