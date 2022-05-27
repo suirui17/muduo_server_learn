@@ -10,6 +10,8 @@
 #include <assert.h>
 #include <pthread.h>
 
+// 线程本地单例类封装
+
 namespace muduo
 {
 
@@ -43,6 +45,8 @@ class ThreadLocalSingleton : boost::noncopyable
     t_value_ = 0;
   }
 
+  // 嵌套类 TSD 
+  // 仅仅是为了回调destructor，实现t_value_的自动销毁
   class Deleter
   {
    public:
@@ -65,7 +69,9 @@ class ThreadLocalSingleton : boost::noncopyable
     pthread_key_t pkey_;
   };
 
+  // POD
   static __thread T* t_value_;
+  // TSD
   static Deleter deleter_;
 };
 

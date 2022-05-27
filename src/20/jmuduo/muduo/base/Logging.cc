@@ -43,8 +43,8 @@ Logger::LogLevel initLogLevel()
 {
 	return Logger::TRACE;
 	/*
-  if (::getenv("MUDUO_LOG_TRACE"))
-    return Logger::TRACE;
+  if (::getenv("MUDUO_LOG_TRACE")) // 定义了trace环境变量
+    return Logger::TRACE; // 返回trace级别的日志
   else if (::getenv("MUDUO_LOG_DEBUG"))
     return Logger::DEBUG;
   else
@@ -117,10 +117,10 @@ Logger::Impl::Impl(LogLevel level, int savedErrno, const SourceFile& file, int l
     line_(line),
     basename_(file)
 {
-  formatTime();
+  formatTime(); // 格式化当前时间存进缓冲区
   CurrentThread::tid();
-  stream_ << T(CurrentThread::tidString(), 6);
-  stream_ << T(LogLevelName[level], 6);
+  stream_ << T(CurrentThread::tidString(), 6); // 当前线程号存进缓冲区
+  stream_ << T(LogLevelName[level], 6); // 当前log级别存进缓冲区
   if (savedErrno != 0)
   {
     stream_ << strerror_tl(savedErrno) << " (errno=" << savedErrno << ") ";
@@ -150,11 +150,11 @@ void Logger::Impl::formatTime()
 
 void Logger::Impl::finish()
 {
-  stream_ << " - " << basename_ << ':' << line_ << '\n';
+  stream_ << " - " << basename_ << ':' << line_ << '\n'; // 缓冲区添加日志结尾
 }
 
 Logger::Logger(SourceFile file, int line)
-  : impl_(INFO, 0, file, line)
+  : impl_(INFO, 0, file, line) 
 {
 }
 

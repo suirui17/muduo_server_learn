@@ -27,7 +27,13 @@ class Test : boost::noncopyable
   std::string name_;
 };
 
-#define STL muduo::Singleton<muduo::ThreadLocal<Test> >::instance().value()
+#define STL muduo::Singleton<muduo::ThreadLocal<Test>>::instance().value()
+// 创建一个ThreadLocal<Test>的单例
+// 即创建了一个线程独立数据的单例
+// 然后返回该单例的value()
+
+// muduo::ThreadLocal<Test>是单例对象，是所有线程共有的
+// 但每个线程都有muduo::ThreadLocal<Test>自己本地存储的value对象
 
 void print()
 {

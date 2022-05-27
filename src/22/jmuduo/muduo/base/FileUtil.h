@@ -21,7 +21,7 @@ namespace muduo
 namespace FileUtil
 {
 
-  class SmallFile : boost::noncopyable
+  class SmallFile : boost::noncopyable // 小文件的读取
   {
    public:
     SmallFile(StringPiece filename);
@@ -56,6 +56,7 @@ namespace FileUtil
                int64_t* fileSize = NULL,
                int64_t* modifyTime = NULL,
                int64_t* createTime = NULL)
+  // 从文件当中读取数据，并保存到字符串content中
   {
     SmallFile file(filename);
     return file.readToString(maxSize, content, fileSize, modifyTime, createTime);

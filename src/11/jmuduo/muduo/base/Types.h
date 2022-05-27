@@ -18,9 +18,9 @@ namespace muduo
 #ifdef MUDUO_STD_STRING
 using std::string;
 #else  // !MUDUO_STD_STRING
-typedef __gnu_cxx::__sso_string string;
+typedef __gnu_cxx::__sso_string string; // 和std::string的接口完全相同，但内部实现不同，进行了短字符的优化
 #endif
-
+ 
 // Taken from google-protobuf stubs/common.h
 //
 // Protocol Buffers - Google's data interchange format
@@ -104,6 +104,7 @@ inline To down_cast(From* f) {                   // so we only accept pointers
   // for compile-time type checking, and has no overhead in an
   // optimized build at run-time, as it will be optimized away
   // completely.
+  // 基类指针转化为派生类指针
   if (false) {
     implicit_cast<From*, To>(0);
   }

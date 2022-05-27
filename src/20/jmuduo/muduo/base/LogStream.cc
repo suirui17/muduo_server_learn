@@ -102,7 +102,7 @@ void LogStream::staticCheck()
 template<typename T>
 void LogStream::formatInteger(T v)
 {
-  if (buffer_.avail() >= kMaxNumericSize)
+  if (buffer_.avail() >= kMaxNumericSize) // 32
   {
     size_t len = convert(buffer_.current(), v);
     buffer_.add(len);
@@ -158,8 +158,11 @@ LogStream& LogStream::operator<<(unsigned long long v)
 }
 
 LogStream& LogStream::operator<<(const void* p)
+// 指针类型转化为
 {
   uintptr_t v = reinterpret_cast<uintptr_t>(p);
+  // uintptr_t 对于64位平台来说为unsigned int
+  // 对于32位平台来说是unsigned long int
   if (buffer_.avail() >= kMaxNumericSize)
   {
     char* buf = buffer_.current();
@@ -186,13 +189,14 @@ template<typename T>
 Fmt::Fmt(const char* fmt, T val)
 {
   BOOST_STATIC_ASSERT(boost::is_arithmetic<T>::value == true);
+  // 断言：只有算术类型才可以进行格式化
 
   length_ = snprintf(buf_, sizeof buf_, fmt, val);
   assert(static_cast<size_t>(length_) < sizeof buf_);
 }
 
 // Explicit instantiations
-
+// 模板偏特化
 template Fmt::Fmt(const char* fmt, char);
 
 template Fmt::Fmt(const char* fmt, short);

@@ -50,7 +50,7 @@ int FileUtil::SmallFile::readToString(int maxSize,
   int err = err_;
   if (fd_ >= 0)
   {
-    content->clear();
+    content->clear(); // 读取文件的缓冲区清空
 
     if (fileSize)
     {
@@ -108,6 +108,7 @@ int FileUtil::SmallFile::readToBuffer(int* size)
   if (fd_ >= 0)
   {
     ssize_t n = ::pread(fd_, buf_, sizeof(buf_)-1, 0);
+    // ::pread函数从指定的偏移位置读取位置到缓冲区当中
     if (n >= 0)
     {
       if (size)

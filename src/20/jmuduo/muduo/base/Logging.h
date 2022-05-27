@@ -20,6 +20,7 @@ class Logger
     FATAL,
     NUM_LOG_LEVELS,
   };
+  // 日志级别
 
   // compile time calculation of basename of source file
   class SourceFile
@@ -70,8 +71,8 @@ class Logger
   static void setFlush(FlushFunc);
 
  private:
-
-class Impl
+// 包含一个Impl嵌套类
+class Impl // 负责日志的格式化
 {
  public:
   typedef Logger::LogLevel LogLevel;
@@ -86,7 +87,7 @@ class Impl
   SourceFile basename_;
 };
 
-  Impl impl_;
+  Impl impl_; // Logger的类成员
 
 };
 

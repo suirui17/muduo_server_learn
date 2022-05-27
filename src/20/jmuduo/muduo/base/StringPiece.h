@@ -37,6 +37,8 @@
 //
 // Arghh!  I wish C++ literals were automatically of type "string".
 
+// 实现高效的字符串传递 
+
 #ifndef MUDUO_BASE_STRINGPIECE_H
 #define MUDUO_BASE_STRINGPIECE_H
 
@@ -66,9 +68,11 @@ class StringPiece {
   StringPiece(const unsigned char* str)
     : ptr_(reinterpret_cast<const char*>(str)),
       length_(static_cast<int>(strlen(ptr_))) { }
-  StringPiece(const string& str)
+  // 直接传递string参数：形参为const char *，而实参为string，这种情况下会发生内存拷贝
+  // StringPiece下面的函数不涉及到内存的拷贝，只有指针操作
+  StringPiece(const string& str) // 指针操作，不涉及到内存拷贝
     : ptr_(str.data()), length_(static_cast<int>(str.size())) { }
-#ifndef MUDUO_STD_STRING
+#ifndef MUDUO_STD_STRING // 短字符串优化
   StringPiece(const std::string& str)
     : ptr_(str.data()), length_(static_cast<int>(str.size())) { }
 #endif
@@ -150,6 +154,7 @@ class StringPiece {
 #endif
 
   // Does "this" start with "x"
+  // 判断前缀
   bool starts_with(const StringPiece& x) const {
     return ((length_ >= x.length_) && (memcmp(ptr_, x.ptr_, x.length_) == 0));
   }
@@ -166,6 +171,7 @@ class StringPiece {
 
 #ifdef HAVE_TYPE_TRAITS
 // This makes vector<StringPiece> really fast for some STL implementations
+// muduo::StringPiece特化
 template<> struct __type_traits<muduo::StringPiece> {
   typedef __true_type    has_trivial_default_constructor;
   typedef __true_type    has_trivial_copy_constructor;

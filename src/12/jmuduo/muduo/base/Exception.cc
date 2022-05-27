@@ -42,6 +42,7 @@ void Exception::fillStackTrace()
 {
   const int len = 200;
   void* buffer[len];
+  // 每个项都用来保存函数栈帧的地址
   int nptrs = ::backtrace(buffer, len);
   char** strings = ::backtrace_symbols(buffer, nptrs);
   if (strings)
@@ -53,7 +54,7 @@ void Exception::fillStackTrace()
 	  stack_.append(demangle(strings[i]));
       stack_.push_back('\n');
     }
-    free(strings);
+    free(strings);// strings是字符串数组，该数组是通过malloc分配的，需要调用者释放
   }
 }
 

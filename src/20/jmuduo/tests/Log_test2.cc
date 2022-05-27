@@ -26,8 +26,15 @@ int main()
 	Logger::setFlush(dummyFlush);
 
 	LOG_TRACE<<"trace ...";
+	// 
+	// 
+
 	LOG_DEBUG<<"debug ...";
 	LOG_INFO<<"info ...";
+	// 即 muduo::Logger(__FILE__, __LINE__).stream() << "info..."
+	// 构造一个无名的LogStream对象，并通过LogStream对象输出
+	// __FILE__ 该行代码所在的文件名
+	// __LINE__ 该行代码所在的行数
 	LOG_WARN<<"warn ...";
 	LOG_ERROR<<"error ...";
 	//LOG_FATAL<<"fatal ...";

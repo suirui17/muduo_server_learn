@@ -62,7 +62,7 @@ int main()
   sleep(3);
   printf("pid=%d, tid=%d %s running ...\n", ::getpid(), CurrentThread::tid(), CurrentThread::name());
   t.run();
-  t.joinAll();
+  t.joinAll();’
 
   printf("number of created threads %d\n", Thread::numCreated());
 }

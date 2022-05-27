@@ -2,6 +2,8 @@
 // that can be found in the License file.
 //
 // Author: Shuo Chen (chenshuo at chenshuo dot com)
+// 基于对象的方法
+
 
 #ifndef MUDUO_BASE_THREAD_H
 #define MUDUO_BASE_THREAD_H
@@ -22,6 +24,7 @@ class Thread : boost::noncopyable
   typedef boost::function<void ()> ThreadFunc;
 
   explicit Thread(const ThreadFunc&, const string& name = string());
+  // 默认名字为空字符串
   ~Thread();
 
   void start();
@@ -38,13 +41,14 @@ class Thread : boost::noncopyable
   static void* startThread(void* thread);
   void runInThread();
 
-  bool       started_;
-  pthread_t  pthreadId_;
-  pid_t      tid_;
-  ThreadFunc func_;
+  bool       started_; // 线程是否已经启动
+  pthread_t  pthreadId_;  // 进程独立id空间中的线程id
+  pid_t      tid_; // 线程真实id
+  ThreadFunc func_; // 基于对象的实现方式，回调函数
   string     name_;
 
-  static AtomicInt32 numCreated_;
+  static AtomicInt32 numCreated_; // 静态成员，原子操作，每构建一个线程就+1
+  // 构造函数将其初始化为0
 };
 
 }

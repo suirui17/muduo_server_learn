@@ -11,6 +11,9 @@
 
 #include <boost/noncopyable.hpp>
 
+// 用于所有子线程等待主线程发起起跑
+// 用于主线程等待子线程初始化完毕才开始工作
+
 namespace muduo
 {
 
@@ -30,7 +33,7 @@ class CountDownLatch : boost::noncopyable
   mutable MutexLock mutex_;
   Condition condition_;
   int count_;
-};
+}; 
 
 }
 #endif  // MUDUO_BASE_COUNTDOWNLATCH_H

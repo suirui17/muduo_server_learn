@@ -10,6 +10,7 @@ Thread::Thread(const ThreadFunc& func) : func_(func), autoDelete_(false)
 void Thread::Start()
 {
 	pthread_create(&threadId_, NULL, ThreadRoutine, this);
+	// 第四个参数时第三个参数的参数地址
 }
 
 void Thread::Join()

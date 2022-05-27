@@ -20,7 +20,7 @@ const int kSmallBuffer = 4000;
 const int kLargeBuffer = 4000*1000;
 
 template<int SIZE>
-class FixedBuffer : boost::noncopyable
+class FixedBuffer : boost::noncopyable // 缓冲区类
 {
  public:
   FixedBuffer()
@@ -34,10 +34,11 @@ class FixedBuffer : boost::noncopyable
     setCookie(cookieEnd);
   }
 
+// 在缓冲区中添加buf开始，长度为len的字符序列
   void append(const char* /*restrict*/ buf, size_t len)
   {
     // FIXME: append partially
-    if (implicit_cast<size_t>(avail()) > len)
+    if (implicit_cast<size_t>(avail()) > len) // avail()返回值由int转化为size_t类型
     {
       memcpy(cur_, buf, len);
       cur_ += len;
@@ -45,31 +46,39 @@ class FixedBuffer : boost::noncopyable
   }
 
   const char* data() const { return data_; }
+  // 字符数组首地址，即data的起始
   int length() const { return static_cast<int>(cur_ - data_); }
+  // 当前缓冲区存放的字符数
 
   // write to data_ directly
-  char* current() { return cur_; }
+  char* current() { return cur_; } 
+  // 返回当前位置指针
   int avail() const { return static_cast<int>(end() - cur_); }
+  // 当前还有多少位置可用
   void add(size_t len) { cur_ += len; }
 
   void reset() { cur_ = data_; }
+
+  //把日志数据清零
   void bzero() { ::bzero(data_, sizeof data_); }
 
   // for used by GDB
   const char* debugString();
   void setCookie(void (*cookie)()) { cookie_ = cookie; }
+  // 传递并设置函数指针
   // for used by unit test
   string asString() const { return string(data_, length()); }
 
  private:
   const char* end() const { return data_ + sizeof data_; }
+  // 缓冲区结束位置
   // Must be outline function for cookies.
   static void cookieStart();
   static void cookieEnd();
 
-  void (*cookie_)();
-  char data_[SIZE];
-  char* cur_;
+  void (*cookie_)(); // 函数指针
+  char data_[SIZE]; // 字符数组
+  char* cur_; // 当前位置的指针
 };
 
 }
@@ -157,9 +166,9 @@ class LogStream : boost::noncopyable
 
 class Fmt // : boost::noncopyable
 {
- public:
+ public: 
   template<typename T>
-  Fmt(const char* fmt, T val);
+  Fmt(const char* fmt, T val); // 成员模板，将一个整数格式化
 
   const char* data() const { return buf_; }
   int length() const { return length_; }
@@ -172,7 +181,7 @@ class Fmt // : boost::noncopyable
 inline LogStream& operator<<(LogStream& s, const Fmt& fmt)
 {
   s.append(fmt.data(), fmt.length());
-  return s;
+  return s; 
 }
 
 }

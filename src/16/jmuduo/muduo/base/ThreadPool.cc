@@ -49,7 +49,7 @@ void ThreadPool::stop()
   {
   MutexLockGuard lock(mutex_);
   running_ = false;
-  cond_.notifyAll();
+  cond_.notifyAll(); 
   }
   for_each(threads_.begin(),
            threads_.end(),

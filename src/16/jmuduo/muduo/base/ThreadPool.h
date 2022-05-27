@@ -28,20 +28,20 @@ class ThreadPool : boost::noncopyable
   explicit ThreadPool(const string& name = string());
   ~ThreadPool();
 
-  void start(int numThreads);
+  void start(int numThreads); // 启动线程固定
   void stop();
 
-  void run(const Task& f);
+  void run(const Task& f); // 添加任务
 
  private:
   void runInThread();
-  Task take();
+  Task take(); // 获取任务
 
   MutexLock mutex_;
   Condition cond_;
   string name_;
-  boost::ptr_vector<muduo::Thread> threads_;
-  std::deque<Task> queue_;
+  boost::ptr_vector<muduo::Thread> threads_; // 线程队列，其中存放的是线程指针
+  std::deque<Task> queue_; // 任务队列
   bool running_;
 };
 

@@ -29,8 +29,8 @@ class ThreadLocal : boost::noncopyable
   T& value()
   {
     T* perThreadValue = static_cast<T*>(pthread_getspecific(pkey_));
-    if (!perThreadValue) {
-      T* newObj = new T();
+    if (!perThreadValue) { // 指针为空
+      T* newObj = new T(); // 创建一个T类型的数据
       pthread_setspecific(pkey_, newObj);
       perThreadValue = newObj;
     }

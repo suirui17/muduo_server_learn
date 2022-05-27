@@ -18,7 +18,7 @@ namespace CurrentThread
 
   inline int tid()
   {
-    if (t_cachedTid == 0)
+    if (t_cachedTid == 0) // 线程tid没有缓存过
     {
       cacheTid();
     }

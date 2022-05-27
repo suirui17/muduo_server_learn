@@ -47,8 +47,8 @@ class Condition : boost::noncopyable
   }
 
  private:
-  MutexLock& mutex_;
-  pthread_cond_t pcond_;
+  MutexLock& mutex_; // 不管理mutex的生存期
+  pthread_cond_t pcond_; // 条件变量
 };
 
 }

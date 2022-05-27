@@ -38,14 +38,20 @@ class AtomicIntegerT : boost::noncopyable
   T get()
   {
     return __sync_val_compare_and_swap(&value_, 0, 0);
+    // 原子比较和设置操作
+    // __sync_val_compare_and_swap(type *ptr, type old_value, type new_value)
+    // 将*ptr的值和old_value比较，如果相等，则将其值设为new_value，并返回为old_value
+    // 比较失败则不会设置新值，但是仍然会返回value的值
   }
 
   T getAndAdd(T x)
   {
     return __sync_fetch_and_add(&value_, x);
+    // 原子自增操作，返回的是value + x之前的值
   }
 
   T addAndGet(T x)
+  // 返回修改之后的值
   {
     return getAndAdd(x) + x;
   }
@@ -78,6 +84,10 @@ class AtomicIntegerT : boost::noncopyable
   T getAndSet(T newValue)
   {
     return __sync_lock_test_and_set(&value_, newValue);
+    // 原子赋值操作
+    // __sync_lock_test_and_set(*ptr, value);
+    // *ptr=value
+    // 使用原子性操作，编译的时候需要加-march=cpu-type
   }
 
  private:

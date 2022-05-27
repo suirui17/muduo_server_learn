@@ -20,6 +20,8 @@ class Singleton : boost::noncopyable
   static T& instance()
   {
     pthread_once(&ponce_, &Singleton::init);
+    // 第一次调用需要创建对象，Singleton::init创建
+    // pthread_once保证该函数只调用一次并且是线程安全的
     return *value_;
   }
 
@@ -31,11 +33,13 @@ class Singleton : boost::noncopyable
   {
     value_ = new T();
     ::atexit(destroy);
+    // 程序结束的时候会调用销毁函数
   }
 
   static void destroy()
   {
     typedef char T_must_be_complete_type[sizeof(T) == 0 ? -1 : 1];
+    // T_must_be_complete_type：T必须为完全类型
     delete value_;
   }
 
