@@ -48,9 +48,9 @@ struct timespec howMuchTimeFromNow(Timestamp when)
   }
   struct timespec ts;
   ts.tv_sec = static_cast<time_t>(
-      microseconds / Timestamp::kMicroSecondsPerSecond);
+      microseconds / Timestamp::kMicroSecondsPerSecond); // 秒
   ts.tv_nsec = static_cast<long>(
-      (microseconds % Timestamp::kMicroSecondsPerSecond) * 1000);
+      (microseconds % Timestamp::kMicroSecondsPerSecond) * 1000); // 纳秒
   return ts;
 }
 
@@ -58,7 +58,8 @@ struct timespec howMuchTimeFromNow(Timestamp when)
 void readTimerfd(int timerfd, Timestamp now)
 {
   uint64_t howmany;
-  ssize_t n = ::read(timerfd, &howmany, sizeof howmany);
+  ssize_t n = ::read(timerfd, &howmany, sizeof howmany); 
+  // 调用read 清除可读事件
   LOG_TRACE << "TimerQueue::handleRead() " << howmany << " at " << now.toString();
   if (n != sizeof howmany)
   {
@@ -67,6 +68,7 @@ void readTimerfd(int timerfd, Timestamp now)
 }
 
 // 重置定时器的超时时间
+// 将新的定时器描述符和超时时间设置进来
 void resetTimerfd(int timerfd, Timestamp expiration)
 {
   // wake up loop by timerfd_settime()
@@ -181,12 +183,14 @@ void TimerQueue::cancelInLoop(TimerId timerId)
 
 void TimerQueue::handleRead()
 {
-  loop_->assertInLoopThread();
-  Timestamp now(Timestamp::now());
+  loop_->assertInLoopThread(); // 当前IO线程中调用
+  Timestamp now(Timestamp::now()); // 返回当前时间
   readTimerfd(timerfd_, now);		// 清除该事件，避免一直触发
 
   // 获取该时刻之前所有的定时器列表(即超时定时器列表)
   std::vector<Entry> expired = getExpired(now);
+  // 获取所有超时的定时器列表
+  // 虽然只关注最早超时的定时器，但是会处理所有已经超时的定时器（时间戳相同的）
 
   callingExpiredTimers_ = true;
   cancelingTimers_.clear();
@@ -268,10 +272,11 @@ void TimerQueue::reset(const std::vector<Entry>& expired, Timestamp now)
   }
 }
 
+// 将新的定时器插入到两个set当中，同时判断最早到期的定时器是否发生改变
 bool TimerQueue::insert(Timer* timer)
 {
-  loop_->assertInLoopThread();
-  assert(timers_.size() == activeTimers_.size());
+  loop_->assertInLoopThread(); // 只能在所属IO线程中调用
+  assert(timers_.size() == activeTimers_.size()); 
   // 最早到期时间是否改变
   bool earliestChanged = false;
   Timestamp when = timer->expiration();
@@ -281,6 +286,8 @@ bool TimerQueue::insert(Timer* timer)
   {
     earliestChanged = true;
   }
+
+  // 将新的定时器插入到两个set中
   {
     // 插入到timers_中
     std::pair<TimerList::iterator, bool> result
