@@ -8,6 +8,10 @@
 //
 // This is an internal header file, you should not include this.
 
+
+// 对定时器的一个高层抽象
+// 并没有调用任何定时器相关的函数
+
 #ifndef MUDUO_NET_TIMER_H
 #define MUDUO_NET_TIMER_H
 
@@ -32,7 +36,7 @@ class Timer : boost::noncopyable
       expiration_(when),
       interval_(interval),
       repeat_(interval > 0.0),
-      sequence_(s_numCreated_.incrementAndGet())
+      sequence_(s_numCreated_.incrementAndGet()) // 初次创建时为1
   { }
 
   void run() const
@@ -51,9 +55,12 @@ class Timer : boost::noncopyable
  private:
   const TimerCallback callback_;		// 定时器回调函数
   Timestamp expiration_;				// 下一次的超时时刻
+  // 当超时时刻到达时，会调用定时器回调函数
   const double interval_;				// 超时时间间隔，如果是一次性定时器，该值为0
   const bool repeat_;					// 是否重复
+  // 如果为false，表示一次性计时器
   const int64_t sequence_;				// 定时器序号
+  // 每个定时器都有一个唯一的编号 
 
   static AtomicInt64 s_numCreated_;		// 定时器计数，当前已经创建的定时器数量
 };

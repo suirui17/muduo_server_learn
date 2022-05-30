@@ -76,6 +76,7 @@ class EventLoop : boost::noncopyable
   
   bool looping_; /* atomic */ // 是否处于循环状态
   bool quit_; /* atomic */ // 是否退出循环
+  // 对bool类型的操作为原子性的操作，因此多线程修改bool类型的变量不需要添加多余的保护
   bool eventHandling_; /* atomic */ // 当前是否处于事件处理的状态
   const pid_t threadId_;		// 当前对象所属线程ID
   Timestamp pollReturnTime_; // 调用poll函数所返回的时间戳

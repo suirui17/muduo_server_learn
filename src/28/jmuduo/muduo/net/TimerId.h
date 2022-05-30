@@ -43,8 +43,8 @@ class TimerId : public muduo::copyable
   friend class TimerQueue;
 
  private:
-  Timer* timer_;
-  int64_t sequence_;
+  Timer* timer_; // 定时器地址
+  int64_t sequence_; // 定时器序号
 };
 
 }

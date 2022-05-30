@@ -99,13 +99,16 @@ TimerQueue::TimerQueue(EventLoop* loop)
 {
   timerfdChannel_.setReadCallback(
       boost::bind(&TimerQueue::handleRead, this));
+      // 当定时器channel可读事件产生时，回调handleRead函数
   // we are always reading the timerfd, we disarm it with timerfd_settime.
   timerfdChannel_.enableReading();
+  // 将通道加入到poller中关注
 }
 
 TimerQueue::~TimerQueue()
 {
   ::close(timerfd_);
+  // 关闭定时器的文件描述符
   // do not remove channel, since we're in EventLoop::dtor();
   for (TimerList::iterator it = timers_.begin();
       it != timers_.end(); ++it)
@@ -119,7 +122,9 @@ TimerId TimerQueue::addTimer(const TimerCallback& cb,
                              double interval)
 {
   Timer* timer = new Timer(cb, when, interval);
+  // 构造一个定时器对象
   /*
+  // 跨线程调用的实现
   loop_->runInLoop(
       boost::bind(&TimerQueue::addTimerInLoop, this, timer));
 	  */
@@ -130,6 +135,7 @@ TimerId TimerQueue::addTimer(const TimerCallback& cb,
 void TimerQueue::cancel(TimerId timerId)
 {
   /*
+  
   loop_->runInLoop(
       boost::bind(&TimerQueue::cancelInLoop, this, timerId));
 	  */
@@ -139,12 +145,14 @@ void TimerQueue::cancel(TimerId timerId)
 void TimerQueue::addTimerInLoop(Timer* timer)
 {
   loop_->assertInLoopThread();
+  // 处于所属eventloop的IO线程当中
   // 插入一个定时器，有可能会使得最早到期的定时器发生改变
   bool earliestChanged = insert(timer);
 
   if (earliestChanged)
   {
     // 重置定时器的超时时刻(timerfd_settime)
+    // 该类中包含了一个单独的定时器，来完成队列中最早的定时器的超时
     resetTimerfd(timerfd_, timer->expiration());
   }
 }

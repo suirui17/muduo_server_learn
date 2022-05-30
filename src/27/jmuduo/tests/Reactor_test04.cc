@@ -36,6 +36,7 @@ int main(void)
     bzero(&howlong, sizeof howlong);
     howlong.it_value.tc_sec = 1;
     // 一次性定时器
+    // muduo库在实现间隔性计时器时没有使用it_interval字段，而是每次重新注册一次性计时器
     ::timerfd_settime(timerfd, 0, &howlong, NULL);
 
     loop.loop(); // 定时器超时，loop会收到可读事件，会回调之前设置的readcallback函数

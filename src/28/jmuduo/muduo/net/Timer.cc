@@ -18,7 +18,9 @@ void Timer::restart(Timestamp now)
   if (repeat_)
   {
     // 重新计算下一个超时时刻
+    // 当前时间+超时时间间隔
     expiration_ = addTime(now, interval_);
+    // 采用值传递，TimeStamp是64bit，这里使用8字节的寄存器进行传值，不需要传递到堆栈当中 
   }
   else
   {

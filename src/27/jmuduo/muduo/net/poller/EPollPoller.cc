@@ -40,7 +40,7 @@ const int kDeleted = 2;
 EPollPoller::EPollPoller(EventLoop* loop)
   : Poller(loop),
     epollfd_(::epoll_create1(EPOLL_CLOEXEC)),
-    events_(kInitEventListSize)
+    events_(kInitEventListSize) // 初始值为16
 {
   if (epollfd_ < 0)
   {
@@ -59,6 +59,7 @@ Timestamp EPollPoller::poll(int timeoutMs, ChannelList* activeChannels)
                                &*events_.begin(),
                                static_cast<int>(events_.size()),
                                timeoutMs);
+  // 返回的事件保存在EventList当中
   Timestamp now(Timestamp::now());
   if (numEvents > 0)
   {
@@ -66,6 +67,7 @@ Timestamp EPollPoller::poll(int timeoutMs, ChannelList* activeChannels)
     fillActiveChannels(numEvents, activeChannels);
     if (implicit_cast<size_t>(numEvents) == events_.size())
     {
+      // 如果eventlist空间不够，每次呈两倍增长
       events_.resize(events_.size()*2);
     }
   }
@@ -100,7 +102,7 @@ void EPollPoller::fillActiveChannels(int numEvents,
 
 void EPollPoller::updateChannel(Channel* channel)
 {
-  Poller::assertInLoopThread();
+  Poller::assertInLoopThread(); // 处于IO线程当中
   LOG_TRACE << "fd = " << channel->fd() << " events = " << channel->events();
   const int index = channel->index();
   if (index == kNew || index == kDeleted)
@@ -109,29 +111,35 @@ void EPollPoller::updateChannel(Channel* channel)
     int fd = channel->fd();
     if (index == kNew)
     {
+      // 创建channel时，index=-1 = kNew
       assert(channels_.find(fd) == channels_.end());
+      // 新的channel在map当中找不到
       channels_[fd] = channel;
+      // 将channel添加到map当中
     }
     else // index == kDeleted
     {
       assert(channels_.find(fd) != channels_.end());
       assert(channels_[fd] == channel);
     }
-    channel->set_index(kAdded);
-    update(EPOLL_CTL_ADD, channel);
+    channel->set_index(kAdded); // index设置为已经添加的状态
+    update(EPOLL_CTL_ADD, channel); // 需要对epoll调用update函数
   }
   else
   {
     // update existing one with EPOLL_CTL_MOD/DEL
+    // modify或者delete操作
     int fd = channel->fd();
     (void)fd;
     assert(channels_.find(fd) != channels_.end());
     assert(channels_[fd] == channel);
     assert(index == kAdded);
-    if (channel->isNoneEvent())
+    if (channel->isNoneEvent()) // 剔除epoll的关注
     {
+      // poll只是将channel相关的文件描述符变为相反数-1，表示不关注了，并没有从poll关注的事件中移除，而是在removechannel时移除
       update(EPOLL_CTL_DEL, channel);
       channel->set_index(kDeleted);
+      // epoll的实现将不关注事件直接移除了，再次关注的时候重新添加
     }
     else
     {
@@ -163,10 +171,10 @@ void EPollPoller::removeChannel(Channel* channel)
 
 void EPollPoller::update(int operation, Channel* channel)
 {
-  struct epoll_event event;
-  bzero(&event, sizeof event);
-  event.events = channel->events();
-  event.data.ptr = channel;
+  struct epoll_event event; // 创建一个新的event
+  bzero(&event, sizeof event); // 将新的event内容置为0
+  event.events = channel->events(); // 将events这只为channel关注的event事件
+  event.data.ptr = channel; // 将事件指定channel
   int fd = channel->fd();
   if (::epoll_ctl(epollfd_, operation, fd, &event) < 0)
   {

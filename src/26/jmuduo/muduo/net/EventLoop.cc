@@ -95,12 +95,16 @@ void EventLoop::loop()
   looping_ = false;
 }
 
+// 该函数可以跨线程调用，不需要每次都在IO线程中调用
+// 如果不是下IO线程中调用需要wakeup
 void EventLoop::quit()
 {
   quit_ = true;
+  // 将quit_置为true之后，上面的loop()函数中的while循环就会退出
   if (!isInLoopThread())
+  // 如果不是在IO线程中调用quit，可能IO线程还处于handlevent的状态或者阻塞在poll位置
   {
-    //wakeup();
+    //wakeup(); // 唤醒阻塞线程
   }
 }
 
