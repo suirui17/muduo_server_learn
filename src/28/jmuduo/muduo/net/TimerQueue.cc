@@ -207,11 +207,12 @@ void TimerQueue::handleRead()
   reset(expired, now);
 }
 
-// rvo
+// rvo return value optimization：通过值返回时不进行拷贝构造，相当于返回的对象被提升为全局
 std::vector<TimerQueue::Entry> TimerQueue::getExpired(Timestamp now)
 {
   assert(timers_.size() == activeTimers_.size());
   std::vector<Entry> expired;
+  // 用当前时刻和很大的地址，构建了一个新的Entry，使用lowerbound时，所有小于该时间的定时器都将被包含在内
   Entry sentry(now, reinterpret_cast<Timer*>(UINTPTR_MAX));
   // 返回第一个未到期的Timer的迭代器
   // lower_bound的含义是返回第一个值>=sentry的元素的iterator
@@ -220,6 +221,7 @@ std::vector<TimerQueue::Entry> TimerQueue::getExpired(Timestamp now)
   assert(end == timers_.end() || now < end->first);
   // 将到期的定时器插入到expired中
   std::copy(timers_.begin(), end, back_inserter(expired));
+  // 左闭右开区间
   // 从timers_中移除到期的定时器
   timers_.erase(timers_.begin(), end);
 
