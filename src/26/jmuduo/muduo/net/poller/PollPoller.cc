@@ -58,6 +58,8 @@ void PollPoller::fillActiveChannels(int numEvents,
     {
       --numEvents;
       ChannelMap::const_iterator ch = channels_.find(pfd->fd);
+      // 通过关键字fd的值查找channel
+      // channel中记录了一个文件描述符，但不持有
       assert(ch != channels_.end());
       Channel* channel = ch->second;
       assert(channel->fd() == pfd->fd);
@@ -68,16 +70,19 @@ void PollPoller::fillActiveChannels(int numEvents,
   }
 }
 
+
+// 注册和更新事件
 void PollPoller::updateChannel(Channel* channel)
 {
-  Poller::assertInLoopThread();
+  Poller::assertInLoopThread(); // 需要在I/O线程中调用
   LOG_TRACE << "fd = " << channel->fd() << " events = " << channel->events();
-  if (channel->index() < 0)
+  if (channel->index() < 0) // 一个新的channel，其在数组中的索引值未确定，设置为小于0的值
   {
 	// index < 0说明是一个新的通道
     // a new one, add to pollfds_
     assert(channels_.find(channel->fd()) == channels_.end());
     struct pollfd pfd;
+    // 为channel构建一个新的pollfd，并放在pollfds的最后
     pfd.fd = channel->fd();
     pfd.events = static_cast<short>(channel->events());
     pfd.revents = 0;
@@ -89,15 +94,20 @@ void PollPoller::updateChannel(Channel* channel)
   else
   {
     // update existing one
+    // channel对应已经存在，并且和channel进行了正确的映射
     assert(channels_.find(channel->fd()) != channels_.end());
     assert(channels_[channel->fd()] == channel);
     int idx = channel->index();
     assert(0 <= idx && idx < static_cast<int>(pollfds_.size()));
+    // 下标合法
     struct pollfd& pfd = pollfds_[idx];
+    // 使用引用，不需要进行拷贝，可以提高效率
     assert(pfd.fd == channel->fd() || pfd.fd == -channel->fd()-1);
     pfd.events = static_cast<short>(channel->events());
     pfd.revents = 0;
 	// 将一个通道暂时更改为不关注事件，但不从Poller中移除该通道
+
+  //更新channel
     if (channel->isNoneEvent())
     {
       // ignore this pollfd
@@ -110,11 +120,11 @@ void PollPoller::updateChannel(Channel* channel)
 
 void PollPoller::removeChannel(Channel* channel)
 {
-  Poller::assertInLoopThread();
+  Poller::assertInLoopThread(); // 在loop循环中
   LOG_TRACE << "fd = " << channel->fd();
-  assert(channels_.find(channel->fd()) != channels_.end());
-  assert(channels_[channel->fd()] == channel);
-  assert(channel->isNoneEvent());
+  assert(channels_.find(channel->fd()) != channels_.end()); // channel对应fd存在
+  assert(channels_[channel->fd()] == channel); // channel与fd正确映射
+  assert(channel->isNoneEvent()); // channel是一个不关注事件
   int idx = channel->index();
   assert(0 <= idx && idx < static_cast<int>(pollfds_.size()));
   const struct pollfd& pfd = pollfds_[idx]; (void)pfd;

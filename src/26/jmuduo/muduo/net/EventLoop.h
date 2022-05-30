@@ -25,6 +25,7 @@ namespace muduo
 namespace net
 {
 
+// 前向声明了两个类
 class Channel;
 class Poller;
 ///
@@ -63,7 +64,7 @@ class EventLoop : boost::noncopyable
     }
   }
   bool isInLoopThread() const { return threadId_ == CurrentThread::tid(); }
-
+  // 确保线程只调用属于自己的eventloop
   static EventLoop* getEventLoopOfCurrentThread();
 
  private:
@@ -73,12 +74,13 @@ class EventLoop : boost::noncopyable
 
   typedef std::vector<Channel*> ChannelList;
   
-  bool looping_; /* atomic */
-  bool quit_; /* atomic */
-  bool eventHandling_; /* atomic */
+  bool looping_; /* atomic */ // 是否处于循环状态
+  bool quit_; /* atomic */ // 是否退出循环
+  bool eventHandling_; /* atomic */ // 当前是否处于事件处理的状态
   const pid_t threadId_;		// 当前对象所属线程ID
-  Timestamp pollReturnTime_;
-  boost::scoped_ptr<Poller> poller_;
+  Timestamp pollReturnTime_; // 调用poll函数所返回的时间戳
+  boost::scoped_ptr<Poller> poller_; // poller和eventloop是组合关系
+  // poller的生存期由eventloop来管理，使用智能指针不需要手动delete poller_
   ChannelList activeChannels_;		// Poller返回的活动通道
   Channel* currentActiveChannel_;	// 当前正在处理的活动通道
 };

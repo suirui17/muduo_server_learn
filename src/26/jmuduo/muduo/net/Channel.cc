@@ -19,6 +19,8 @@ using namespace muduo::net;
 
 const int Channel::kNoneEvent = 0;
 const int Channel::kReadEvent = POLLIN | POLLPRI;
+// POLLIN：产生了可读事件
+// POLLPRI：产生了紧急事件
 const int Channel::kWriteEvent = POLLOUT;
 
 Channel::Channel(EventLoop* loop, int fd__)
@@ -47,6 +49,7 @@ void Channel::tie(const boost::shared_ptr<void>& obj)
 void Channel::update()
 {
   loop_->updateChannel(this);
+  // 调用eventloop的update channel
 }
 
 // 调用这个函数之前确保调用disableAll
@@ -77,24 +80,30 @@ void Channel::handleEventWithGuard(Timestamp receiveTime)
 {
   eventHandling_ = true;
   if ((revents_ & POLLHUP) && !(revents_ & POLLIN))
+  // POLLHUP：hang up （output only）
+  // revents_没有POLLIN
   {
     if (logHup_)
     {
       LOG_WARN << "Channel::handle_event() POLLHUP";
     }
     if (closeCallback_) closeCallback_();
+    // 被挂断了，回调closecallback
   }
 
-  if (revents_ & POLLNVAL)
+  if (revents_ & POLLNVAL) // 文件描述符未打开，或不是一个合法的文件描述符（output only）
   {
     LOG_WARN << "Channel::handle_event() POLLNVAL";
+    // 记录日志
   }
 
   if (revents_ & (POLLERR | POLLNVAL))
   {
-    if (errorCallback_) errorCallback_();
+    if (errorCallback_) errorCallback_();// 错误回调函数
   }
   if (revents_ & (POLLIN | POLLPRI | POLLRDHUP))
+  // POLLRDHUP：对等方关闭了连接或者shutdown了写半边，会收到该信号
+  // 收到该信号，下面read函数返回0
   {
     if (readCallback_) readCallback_(receiveTime);
   }

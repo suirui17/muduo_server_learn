@@ -39,6 +39,7 @@ class Poller : boost::noncopyable
   /// Polls the I/O events.
   /// Must be called in the loop thread.
   virtual Timestamp poll(int timeoutMs, ChannelList* activeChannels) = 0;
+  // poll函数会返回活动通道列表
 
   /// Changes the interested I/O events.
   /// Must be called in the loop thread.
@@ -56,7 +57,7 @@ class Poller : boost::noncopyable
   }
 
  private:
-  EventLoop* ownerLoop_;	// Poller所属EventLoop
+  EventLoop* ownerLoop_;	// Poller所属EventLoop，一个eventloop包含一个poller
 };
 
 }

@@ -8,6 +8,8 @@
 //
 // This is an internal header file, you should not include this.
 
+
+// 对poll的封装
 #ifndef MUDUO_NET_POLLER_POLLPOLLER_H
 #define MUDUO_NET_POLLER_POLLPOLLER_H
 
@@ -34,6 +36,7 @@ class PollPoller : public Poller
   virtual ~PollPoller();
 
   virtual Timestamp poll(int timeoutMs, ChannelList* activeChannels);
+  // 返回活动通道列表
   virtual void updateChannel(Channel* channel);
   virtual void removeChannel(Channel* channel);
 

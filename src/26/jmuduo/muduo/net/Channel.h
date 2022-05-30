@@ -31,13 +31,14 @@ class EventLoop;
 /// This class doesn't own the file descriptor.
 /// The file descriptor could be a socket,
 /// an eventfd, a timerfd, or a signalfd
+// 不拥有fd
 class Channel : boost::noncopyable
 {
  public:
-  typedef boost::function<void()> EventCallback;
-  typedef boost::function<void(Timestamp)> ReadEventCallback;
+  typedef boost::function<void()> EventCallback; // 事件回调处理
+  typedef boost::function<void(Timestamp)> ReadEventCallback; // 读事件的回调处理，需要多一个时间戳
 
-  Channel(EventLoop* loop, int fd);
+  Channel(EventLoop* loop, int fd); // 一个所属eventloop
   ~Channel();
 
   void handleEvent(Timestamp receiveTime);
@@ -54,13 +55,14 @@ class Channel : boost::noncopyable
   /// prevent the owner object being destroyed in handleEvent.
   void tie(const boost::shared_ptr<void>&);
 
-  int fd() const { return fd_; }
-  int events() const { return events_; }
+  int fd() const { return fd_; } // channel所对应的文件描述符
+  int events() const { return events_; } // 注册的事件保存在events_里面
   void set_revents(int revt) { revents_ = revt; } // used by pollers
   // int revents() const { return revents_; }
   bool isNoneEvent() const { return events_ == kNoneEvent; }
 
-  void enableReading() { events_ |= kReadEvent; update(); }
+  void enableReading() { events_ |= kReadEvent; update(); } 
+  // 关注可读事件，把通道注册到eventloop，从而注册到eventloop所持有的poller对象中
   // void disableReading() { events_ &= ~kReadEvent; update(); }
   void enableWriting() { events_ |= kWriteEvent; update(); }
   void disableWriting() { events_ &= ~kWriteEvent; update(); }
@@ -72,6 +74,7 @@ class Channel : boost::noncopyable
   void set_index(int idx) { index_ = idx; }
 
   // for debug
+  // 将关注事件转成字符串以便调试
   string reventsToString() const;
 
   void doNotLogHup() { logHup_ = false; }
@@ -83,7 +86,7 @@ class Channel : boost::noncopyable
   void update();
   void handleEventWithGuard(Timestamp receiveTime);
 
-  static const int kNoneEvent;
+  static const int kNoneEvent; // 没有事件
   static const int kReadEvent;
   static const int kWriteEvent;
 
@@ -91,13 +94,14 @@ class Channel : boost::noncopyable
   const int  fd_;			// 文件描述符，但不负责关闭该文件描述符
   int        events_;		// 关注的事件
   int        revents_;		// poll/epoll返回的事件
-  int        index_;		// used by Poller.表示在poll的事件数组中的序号
+  int        index_;		// used by Poller.表示channel在poll的事件数组中的序号
   bool       logHup_;		// for POLLHUP
 
   boost::weak_ptr<void> tie_;
   bool tied_;
   bool eventHandling_;		// 是否处于处理事件中
-  ReadEventCallback readCallback_;
+  // 事件回调函数
+  ReadEventCallback readCallback_; 
   EventCallback writeCallback_;
   EventCallback closeCallback_;
   EventCallback errorCallback_;

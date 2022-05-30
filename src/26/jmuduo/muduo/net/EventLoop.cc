@@ -70,7 +70,7 @@ void EventLoop::loop()
   //::poll(NULL, 0, 5*1000);
   while (!quit_)
   {
-    activeChannels_.clear();
+    activeChannels_.clear(); // 活动通道列表清空
     pollReturnTime_ = poller_->poll(kPollTimeMs, &activeChannels_);
     //++iteration_;
     if (Logger::logLevel() <= Logger::TRACE)
@@ -78,10 +78,11 @@ void EventLoop::loop()
       printActiveChannels();
     }
     // TODO sort channel by priority
-    eventHandling_ = true;
+    eventHandling_ = true; // 处于事件处理状态
     for (ChannelList::iterator it = activeChannels_.begin();
         it != activeChannels_.end(); ++it)
     {
+      // 处理当前事件
       currentActiveChannel_ = *it;
       currentActiveChannel_->handleEvent(pollReturnTime_);
     }
@@ -106,7 +107,8 @@ void EventLoop::quit()
 void EventLoop::updateChannel(Channel* channel)
 {
   assert(channel->ownerLoop() == this);
-  assertInLoopThread();
+  // channel所属的eventloop对象为本对象才会进行处理
+  assertInLoopThread(); // 判断当前线程是否在loop循环当中
   poller_->updateChannel(channel);
 }
 
@@ -129,6 +131,7 @@ void EventLoop::abortNotInLoopThread()
             << ", current thread id = " <<  CurrentThread::tid();
 }
 
+// 对活动通道进行日志记录
 void EventLoop::printActiveChannels() const
 {
   for (ChannelList::const_iterator it = activeChannels_.begin();
