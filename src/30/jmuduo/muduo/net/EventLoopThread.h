@@ -31,17 +31,19 @@ class EventLoopThread : boost::noncopyable
 
   EventLoopThread(const ThreadInitCallback& cb = ThreadInitCallback());
   ~EventLoopThread();
-  EventLoop* startLoop();	// 启动线程，该线程就成为了IO线程
+  EventLoop* startLoop();	// 启动线程，运行线程函数，该线程就成为了IO线程
 
  private:
   void threadFunc();		// 线程函数
 
   EventLoop* loop_;			// loop_指针指向一个EventLoop对象
-  bool exiting_;
-  Thread thread_;
+  bool exiting_; // 是否退出
+  Thread thread_; // 基于对象的编程思想，包含一个Thread类对象
+  
   MutexLock mutex_;
-  Condition cond_;
-  ThreadInitCallback callback_;		// 回调函数在EventLoop::loop事件循环之前被调用
+  Condition cond_; // 和mutex一起使用
+
+  ThreadInitCallback callback_;		// 如果该回调函数非空，回调函数在EventLoop::loop事件循环之前被调用
 };
 
 }

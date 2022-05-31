@@ -19,7 +19,7 @@ using namespace muduo::net;
 EventLoopThread::EventLoopThread(const ThreadInitCallback& cb)
   : loop_(NULL),
     exiting_(false),
-    thread_(boost::bind(&EventLoopThread::threadFunc, this)),
+    thread_(boost::bind(&EventLoopThread::threadFunc, this)), // 用一个线程回调函数来初始化一个线程
     mutex_(),
     cond_(mutex_),
     callback_(cb)
@@ -30,15 +30,17 @@ EventLoopThread::~EventLoopThread()
 {
   exiting_ = true;
   loop_->quit();		// 退出IO线程，让IO线程的loop循环退出，从而退出了IO线程
-  thread_.join();
+  thread_.join(); // 归并线程
 }
 
 EventLoop* EventLoopThread::startLoop()
 {
-  assert(!thread_.started());
+  assert(!thread_.started()); // 线程未启动
   thread_.start();
 
   {
+    // 使用条件变量等待loop指针不为空
+    // loop_不为空，说明EventLoopThread::threadFunc()已经运行起来
     MutexLockGuard lock(mutex_);
     while (loop_ == NULL)
     {
@@ -49,6 +51,8 @@ EventLoop* EventLoopThread::startLoop()
   return loop_;
 }
 
+// 创建一个eventloop并且将loop_指针指向该对象
+// 开始loop循环
 void EventLoopThread::threadFunc()
 {
   EventLoop loop;
