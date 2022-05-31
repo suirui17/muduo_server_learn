@@ -124,6 +124,7 @@ TimerId TimerQueue::addTimer(const TimerCallback& cb,
                              double interval)
 {
   Timer* timer = new Timer(cb, when, interval);
+  // 这里注册了定时器超时后的回调函数
   // 构造一个定时器对象
   /*
   // 跨线程调用的实现
@@ -137,7 +138,7 @@ TimerId TimerQueue::addTimer(const TimerCallback& cb,
 void TimerQueue::cancel(TimerId timerId)
 {
   /*
-  
+  // 跨线程调用的实现
   loop_->runInLoop(
       boost::bind(&TimerQueue::cancelInLoop, this, timerId));
 	  */
@@ -174,9 +175,12 @@ void TimerQueue::cancelInLoop(TimerId timerId)
     activeTimers_.erase(it);
   }
   else if (callingExpiredTimers_)
+  // handleread中getexpired已经将该定时器返回，即从两个set中移除了
+  // 那么此时timerqueue可能处于callingexpiredtimers的状态
   {
     // 已经到期，并且正在调用回调函数的定时器
     cancelingTimers_.insert(timer);
+    // 加入到取消定时器的集合中，handleread处理完所有超时定时器后，该定时器不会再被重启
   }
   assert(timers_.size() == activeTimers_.size());
 }
@@ -193,6 +197,7 @@ void TimerQueue::handleRead()
   // 虽然只关注最早超时的定时器，但是会处理所有已经超时的定时器（时间戳相同的）
 
   callingExpiredTimers_ = true;
+  // 处于处理超时定时器的状态中
   cancelingTimers_.clear();
   // safe to callback outside critical section
   for (std::vector<Entry>::iterator it = expired.begin();
@@ -221,6 +226,7 @@ std::vector<TimerQueue::Entry> TimerQueue::getExpired(Timestamp now)
   assert(end == timers_.end() || now < end->first);
   // 将到期的定时器插入到expired中
   std::copy(timers_.begin(), end, back_inserter(expired));
+  // 使用了插入迭代器
   // 左闭右开区间
   // 从timers_中移除到期的定时器
   timers_.erase(timers_.begin(), end);
@@ -235,9 +241,10 @@ std::vector<TimerQueue::Entry> TimerQueue::getExpired(Timestamp now)
   }
 
   assert(timers_.size() == activeTimers_.size());
-  return expired;
+  return expired; // 进行了rvo优化，没有拷贝构造
 }
 
+// 对不是一次性的定时器进行重启
 void TimerQueue::reset(const std::vector<Entry>& expired, Timestamp now)
 {
   Timestamp nextExpire;
@@ -250,7 +257,7 @@ void TimerQueue::reset(const std::vector<Entry>& expired, Timestamp now)
     if (it->second->repeat()
         && cancelingTimers_.find(timer) == cancelingTimers_.end())
     {
-      it->second->restart(now);
+      it->second->restart(now); // 根据当前时间和超时时间间隔重新计算超时时间
       insert(it->second);
     }
     else

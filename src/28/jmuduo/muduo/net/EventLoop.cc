@@ -109,6 +109,8 @@ void EventLoop::quit()
 TimerId EventLoop::runAt(const Timestamp& time, const TimerCallback& cb)
 {
   return timerQueue_->addTimer(cb, time, 0.0);
+  // time 为定时器的超时时间
+  // 0.0表示为一次性定时器
 }
 
 TimerId EventLoop::runAfter(double delay, const TimerCallback& cb)
