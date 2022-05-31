@@ -32,7 +32,7 @@ class Socket : boost::noncopyable
 {
  public:
   explicit Socket(int sockfd)
-    : sockfd_(sockfd)
+    : sockfd_(sockfd) // 文件描述符必须是已经创建好的
   { }
 
   // Socket(Socket&&) // move constructor in C++11
@@ -57,6 +57,7 @@ class Socket : boost::noncopyable
   /// Enable/disable TCP_NODELAY (disable/enable Nagle's algorithm).
   ///
   // Nagle算法可以一定程度上避免网络拥塞
+  // 频繁发送一些小的数据包，会等待后续数据包一起发送
   // TCP_NODELAY选项可以禁用Nagle算法
   // 禁用Nagle算法，可以避免连续发包出现延迟，这对于编写低延迟的网络服务很重要
   void setTcpNoDelay(bool on);
@@ -64,6 +65,7 @@ class Socket : boost::noncopyable
   ///
   /// Enable/disable SO_REUSEADDR
   ///
+  // 设置地址可以重复使用
   void setReuseAddr(bool on);
 
   ///

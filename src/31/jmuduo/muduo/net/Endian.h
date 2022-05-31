@@ -28,9 +28,14 @@ namespace sockets
 #endif
 #pragma GCC diagnostic ignored "-Wconversion"
 #pragma GCC diagnostic ignored "-Wold-style-cast"
+
+// htonl（64bits）和htons（32bits）是POSIX函数，为可移植的，既可以在linux下使用，也可以在windows下使用
+// 主机字节序转化为网络字节序（64bits）
 inline uint64_t hostToNetwork64(uint64_t host64)
 {
-  return htobe64(host64);
+  // 将主机字节序转化为大端字节序
+  return htobe64(host64); // 只能在linux下使用
+  // 网络字节序为大端字节序
 }
 
 inline uint32_t hostToNetwork32(uint32_t host32)

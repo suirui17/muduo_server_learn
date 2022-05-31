@@ -18,6 +18,7 @@
 using namespace muduo;
 using namespace muduo::net;
 
+// RAII机制
 Socket::~Socket()
 {
   sockets::close(sockfd_);
@@ -69,6 +70,7 @@ void Socket::setReuseAddr(bool on)
 void Socket::setKeepAlive(bool on)
 {
   int optval = on ? 1 : 0;
+  // 若为1则是开启TCP层的心跳，如果应用层的心跳开启的话，可以不必设置TCP层的心跳
   ::setsockopt(sockfd_, SOL_SOCKET, SO_KEEPALIVE,
                &optval, sizeof optval);
   // FIXME CHECK

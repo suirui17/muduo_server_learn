@@ -31,11 +31,13 @@ class InetAddress : public muduo::copyable
   /// Constructs an endpoint with given port number.
   /// Mostly used in TcpServer listening.
   // 仅仅指定port，不指定ip，则ip为INADDR_ANY（即0.0.0.0）
+  // 在任意地址上监听
   explicit InetAddress(uint16_t port);
 
   /// Constructs an endpoint with given ip and port.
   /// @c ip should be "1.2.3.4"
   InetAddress(const StringPiece& ip, uint16_t port);
+  // stringPiece& 既可以接收char*参数，也可以接收string参数
 
   /// Constructs an endpoint with given struct @c sockaddr_in
   /// Mostly used when accepting new connections
@@ -57,7 +59,9 @@ class InetAddress : public muduo::copyable
   void setSockAddrInet(const struct sockaddr_in& addr) { addr_ = addr; }
 
   uint32_t ipNetEndian() const { return addr_.sin_addr.s_addr; }
+  // 返回网络字节序的32位整数ip
   uint16_t portNetEndian() const { return addr_.sin_port; }
+  // 返回网络字节序的端口
 
  private:
   struct sockaddr_in addr_;
