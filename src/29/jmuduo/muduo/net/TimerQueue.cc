@@ -120,6 +120,9 @@ TimerId TimerQueue::addTimer(const TimerCallback& cb,
 {
   Timer* timer = new Timer(cb, when, interval);
   
+  // 线程安全的，其他线程A也可调用线程B的TimerQueue对象的addTimer
+  // 最终向线程B对应的eventloop对象中添加了一个异步调用的addTimerInLoop函数
+  // 线程B会的eventloop会给自己添加一个定时器
   loop_->runInLoop(
       boost::bind(&TimerQueue::addTimerInLoop, this, timer));
 	  

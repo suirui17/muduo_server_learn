@@ -124,12 +124,17 @@ class EventLoop : boost::noncopyable
   Timestamp pollReturnTime_;
   boost::scoped_ptr<Poller> poller_;
   boost::scoped_ptr<TimerQueue> timerQueue_;
+
   int wakeupFd_;				// 用于eventfd
   // unlike in TimerQueue, which is an internal class,
   // we don't expose Channel to client.
   boost::scoped_ptr<Channel> wakeupChannel_;	// 该通道将会纳入poller_来管理
+  // 智能指针，eventloop和该channel为组合的关系
+  // eventloop对象销毁，wakeupchannel对象也被销毁（组合关系）
+
   ChannelList activeChannels_;		// Poller返回的活动通道
   Channel* currentActiveChannel_;	// 当前正在处理的活动通道
+  
   MutexLock mutex_;
   std::vector<Functor> pendingFunctors_; // @BuardedBy mutex_
 };
