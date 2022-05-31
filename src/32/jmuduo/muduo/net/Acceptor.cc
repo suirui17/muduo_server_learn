@@ -27,19 +27,19 @@ Acceptor::Acceptor(EventLoop* loop, const InetAddress& listenAddr)
     acceptSocket_(sockets::createNonblockingOrDie()),
     acceptChannel_(loop, acceptSocket_.fd()),
     listenning_(false),
-    idleFd_(::open("/dev/null", O_RDONLY | O_CLOEXEC))
+    idleFd_(::open("/dev/null", O_RDONLY | O_CLOEXEC)) // 预先准备一个空闲的文件描述符
 {
   assert(idleFd_ >= 0);
-  acceptSocket_.setReuseAddr(true);
-  acceptSocket_.bindAddress(listenAddr);
+  acceptSocket_.setReuseAddr(true); // 设置地址重复利用
+  acceptSocket_.bindAddress(listenAddr); // 绑定监听地址
   acceptChannel_.setReadCallback(
-      boost::bind(&Acceptor::handleRead, this));
+      boost::bind(&Acceptor::handleRead, this)); // 设置读回调函数
 }
 
 Acceptor::~Acceptor()
 {
-  acceptChannel_.disableAll();
-  acceptChannel_.remove();
+  acceptChannel_.disableAll(); // 所有事件都设置为不关注
+  acceptChannel_.remove(); // 将acceptChannel从eventloop的channel列表中移除
   ::close(idleFd_);
 }
 
@@ -47,8 +47,8 @@ void Acceptor::listen()
 {
   loop_->assertInLoopThread();
   listenning_ = true;
-  acceptSocket_.listen();
-  acceptChannel_.enableReading();
+  acceptSocket_.listen(); // 监听套接字
+  acceptChannel_.enableReading(); // 关注channel的可读事件
 }
 
 void Acceptor::handleRead()
@@ -56,7 +56,7 @@ void Acceptor::handleRead()
   loop_->assertInLoopThread();
   InetAddress peerAddr(0);
   //FIXME loop until no more
-  int connfd = acceptSocket_.accept(&peerAddr);
+  int connfd = acceptSocket_.accept(&peerAddr); 
   if (connfd >= 0)
   {
     // string hostport = peerAddr.toIpPort();
@@ -75,12 +75,12 @@ void Acceptor::handleRead()
     // Read the section named "The special problem of
     // accept()ing when you can't" in libev's doc.
     // By Marc Lehmann, author of livev.
-    if (errno == EMFILE)
+    if (errno == EMFILE) // 文件描述符过多
     {
-      ::close(idleFd_);
-      idleFd_ = ::accept(acceptSocket_.fd(), NULL, NULL);
-      ::close(idleFd_);
-      idleFd_ = ::open("/dev/null", O_RDONLY | O_CLOEXEC);
+      ::close(idleFd_); // 关闭空闲描述符
+      idleFd_ = ::accept(acceptSocket_.fd(), NULL, NULL); // 接收文件描述符
+      ::close(idleFd_); // 断开与客户端连接
+      idleFd_ = ::open("/dev/null", O_RDONLY | O_CLOEXEC); // 重新打开空闲描述符
     }
   }
 }

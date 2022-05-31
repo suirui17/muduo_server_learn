@@ -102,6 +102,7 @@ int sockets::accept(int sockfd, struct sockaddr_in* addr)
 #if VALGRIND
   int connfd = ::accept(sockfd, sockaddr_cast(addr), &addrlen);
   setNonBlockAndCloseOnExec(connfd);
+  // addr中保存的是对端协议地址，addrlen是对端协议地址的长度
 #else
   int connfd = ::accept4(sockfd, sockaddr_cast(addr),
                          &addrlen, SOCK_NONBLOCK | SOCK_CLOEXEC);
