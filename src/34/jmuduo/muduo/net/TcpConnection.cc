@@ -50,6 +50,8 @@ TcpConnection::TcpConnection(EventLoop* loop,
     peerAddr_(peerAddr)/*,
     highWaterMark_(64*1024*1024)*/
 {
+  // channel_的回调事件在TcpConnection初始化的时候就被设置好
+  // 均为TcpConnection中的handle函数
   // 通道可读事件到来的时候，回调TcpConnection::handleRead，_1是事件发生时间
   channel_->setReadCallback(
       boost::bind(&TcpConnection::handleRead, this, _1));
@@ -77,6 +79,8 @@ void TcpConnection::connectEstablished()
   setState(kConnected);
   LOG_TRACE << "[3] usecount=" << shared_from_this().use_count();
   channel_->tie(shared_from_this());
+  // shared_from_this()获得当前对象的shared_ptr对象 
+  // tie_接收的参数是shared_ptr
   channel_->enableReading();	// TcpConnection所对应的通道加入到Poller关注
 
   connectionCallback_(shared_from_this());
@@ -92,8 +96,11 @@ void TcpConnection::connectDestroyed()
     channel_->disableAll();
 
     connectionCallback_(shared_from_this());
+    // 回调用户回调函数
+    // 实际上不会调用，因为当前状态已经等于kDisconnected
+    // 因为在handleClose中，已经将状态设置为kDisconnected，并且调用了用户回调函数
   }
-  channel_->remove();
+  channel_->remove(); // 将channel从Poller中移除
 }
 
 void TcpConnection::handleRead(Timestamp receiveTime)
@@ -148,7 +155,9 @@ void TcpConnection::handleClose()
   channel_->disableAll();
 
   TcpConnectionPtr guardThis(shared_from_this());
+  // 返回自身对象的shared_ptr
   connectionCallback_(guardThis);		// 这一行，可以不调用
+  // 回调用户的函数
   LOG_TRACE << "[7] usecount=" << guardThis.use_count();
   // must be the last line
   closeCallback_(guardThis);	// 调用TcpServer::removeConnection

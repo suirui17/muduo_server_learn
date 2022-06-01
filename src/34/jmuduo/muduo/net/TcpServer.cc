@@ -87,6 +87,10 @@ void TcpServer::newConnection(int sockfd, const InetAddress& peerAddr)
   InetAddress localAddr(sockets::getLocalAddr(sockfd));
   // FIXME poll with zero timeout to double confirm the new connection
   // FIXME use make_shared if necessary
+
+  // 新建连接时，创建一个TcpConnection对象，使用shared_ptr对TcpConnection对象进行管理
+  // TcpConnection引用计数为1
+  // 将shared_ptr<TcpConnection>加入到TcpServer的TcpConnection列表中
   TcpConnectionPtr conn(new TcpConnection(loop_,
                                           connName,
                                           sockfd,
@@ -96,12 +100,19 @@ void TcpServer::newConnection(int sockfd, const InetAddress& peerAddr)
   LOG_TRACE << "[1] usecount=" << conn.use_count();
   connections_[connName] = conn;
   LOG_TRACE << "[2] usecount=" << conn.use_count();
+
+  // 设置回调函数
   conn->setConnectionCallback(connectionCallback_);
   conn->setMessageCallback(messageCallback_);
 
   conn->setCloseCallback(
       boost::bind(&TcpServer::removeConnection, this, _1));
 
+  // 设置连接为建立状态
+  // 该函数中，在cahnnel中维护weak_ptr(tie_)为TcpConnection的弱引用
+  // 此时，TcpConnection的引用仍为1
+  // 关注读事件，将channel加入到poller的关注列表中
+  // 调用连接回调函数
   conn->connectEstablished();
   LOG_TRACE << "[5] usecount=" << conn.use_count();
 
@@ -116,13 +127,16 @@ void TcpServer::removeConnection(const TcpConnectionPtr& conn)
 
   LOG_TRACE << "[8] usecount=" << conn.use_count();
   size_t n = connections_.erase(conn->name());
+  // 将TcpConnection对象从列表中移除
   LOG_TRACE << "[9] usecount=" << conn.use_count();
 
   (void)n;
   assert(n == 1);
   
+  // 放入eventloop的functors中
   loop_->queueInLoop(
       boost::bind(&TcpConnection::connectDestroyed, conn));
+      // 该TcpConnection的引用计数会+1
   LOG_TRACE << "[10] usecount=" << conn.use_count();
 
 }

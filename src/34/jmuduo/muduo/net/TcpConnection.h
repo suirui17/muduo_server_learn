@@ -87,9 +87,10 @@ class TcpConnection : boost::noncopyable,
   boost::scoped_ptr<Channel> channel_;
   InetAddress localAddr_;
   InetAddress peerAddr_;
+  
   ConnectionCallback connectionCallback_;
   MessageCallback messageCallback_;
-  CloseCallback closeCallback_;
+  CloseCallback closeCallback_; //内部的连接断开回调函数，即TcpServer的removeConnection
 };
 
 typedef boost::shared_ptr<TcpConnection> TcpConnectionPtr;

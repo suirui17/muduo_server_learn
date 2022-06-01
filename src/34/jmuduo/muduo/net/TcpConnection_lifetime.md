@@ -2,7 +2,7 @@
 
 ![](close_connection.png)
 
-* 连接断开为可读事件，前面处理流程和可读事件相同loop() → <mark handleEvent()> → handleRead() → read返回为0
+* 连接断开为可读事件，前面处理流程和可读事件相同loop() → handleEvent() → handleRead() → read返回为0
 
 * read返回值为0，调用handleClose()，回调TcpServer的removeConnection()，TcpServer将TcpConnection移除
 
@@ -18,4 +18,7 @@
 
 * handleEvent函数返回之后，其提升的TcpConnection的引用计数-1
 
-* connectDestroyed()调用用户的回调函数，TcpConnection彻底被销毁
+* connectDestroyed()调用用户的回调函数，TcpConnection彻底被销毁，connectDestroyed()是boost::function函数，其中持有的TcpConnection引用计数为1，当boost::function被销毁时，TcpConnection引用计数变为0
+
+### boost::enable_shared_from_this
+
