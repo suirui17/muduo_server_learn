@@ -40,4 +40,10 @@ cliaddr和addrlen用来返回已连接的对端进程的协议地址，均为值
 
 * 监听Acceptor
 
+    * Socket::listen() → socket::listenOrDie() → ::listen()
+
+    * Channel::enableReading() → Channel::update() → EventLoop::updateChannel() → Poller::updateChannel() channel关注文件描述符的可读事件，并且将channel注册至Poller中
+
 * socket::accept，将对端协议地址通过值-结果参数的形式返回，同时返回一个全新的描述符，表示和对端的TCP连接
+
+* eventloop.loop()实际上调用poll，监听关注的事件
