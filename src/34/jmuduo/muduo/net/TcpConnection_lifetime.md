@@ -2,7 +2,7 @@
 
 ![](close_connection.png)
 
-* 连接断开为可读事件，前面处理流程和可读事件相同loop() → <mark>handleEvent()</mark> → handleRead() → read返回为0
+* 连接断开为可读事件，前面处理流程和可读事件相同loop() → <mark handleEvent()> → handleRead() → read返回为0
 
 * read返回值为0，调用handleClose()，回调TcpServer的removeConnection()，TcpServer将TcpConnection移除
 
