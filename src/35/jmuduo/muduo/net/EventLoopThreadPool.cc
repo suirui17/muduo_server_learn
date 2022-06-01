@@ -42,6 +42,8 @@ void EventLoopThreadPool::start(const ThreadInitCallback& cb)
     EventLoopThread* t = new EventLoopThread(cb);
     threads_.push_back(t);
     loops_.push_back(t->startLoop());	// 启动EventLoopThread线程，在进入事件循环之前，会调用cb
+    // 启动eventloop.loop()，并且将创建的EventLoop对象返回
+    // loop()执行之前，如果回调函数不为空，会调用该回调函数
   }
   if (numThreads_ == 0 && cb)
   {
@@ -50,10 +52,11 @@ void EventLoopThreadPool::start(const ThreadInitCallback& cb)
   }
 }
 
+// 当一个新的连接到来时需要的处理
 EventLoop* EventLoopThreadPool::getNextLoop()
 {
   baseLoop_->assertInLoopThread();
-  EventLoop* loop = baseLoop_;
+  EventLoop* loop = baseLoop_; // acceptor所属的loop
 
   // 如果loops_为空，则loop指向baseLoop_
   // 如果不为空，按照round-robin（RR，轮叫）的调度方式选择一个EventLoop
@@ -67,6 +70,6 @@ EventLoop* EventLoopThreadPool::getNextLoop()
       next_ = 0;
     }
   }
-  return loop;
+  return loop; // 直接返回baseloop_，即mainReactor需要处理监听套接字和所有的连接
 }
 

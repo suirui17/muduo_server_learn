@@ -83,8 +83,10 @@ void TcpServer::start()
 void TcpServer::newConnection(int sockfd, const InetAddress& peerAddr)
 {
   loop_->assertInLoopThread();
+
   // 按照轮叫的方式选择一个EventLoop
   EventLoop* ioLoop = threadPool_->getNextLoop();
+
   char buf[32];
   snprintf(buf, sizeof buf, ":%s#%d", hostport_.c_str(), nextConnId_);
   ++nextConnId_;
@@ -118,6 +120,7 @@ void TcpServer::newConnection(int sockfd, const InetAddress& peerAddr)
       boost::bind(&TcpServer::removeConnection, this, _1));
 
   // conn->connectEstablished();
+  // 跨线程调用
   ioLoop->runInLoop(boost::bind(&TcpConnection::connectEstablished, conn));
   LOG_TRACE << "[5] usecount=" << conn.use_count();
 

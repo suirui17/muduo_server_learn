@@ -92,6 +92,7 @@ class TcpServer : boost::noncopyable
   const string hostport_;		// 服务端口
   const string name_;			// 服务名
   boost::scoped_ptr<Acceptor> acceptor_; // avoid revealing Acceptor
+  // 线程池
   boost::scoped_ptr<EventLoopThreadPool> threadPool_;
   ConnectionCallback connectionCallback_;
   MessageCallback messageCallback_;

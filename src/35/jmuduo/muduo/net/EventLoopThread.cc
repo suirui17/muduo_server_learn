@@ -36,24 +36,24 @@ EventLoopThread::~EventLoopThread()
 EventLoop* EventLoopThread::startLoop()
 {
   assert(!thread_.started());
-  thread_.start();
+  thread_.start(); // 创建并启动线程，并执行绑定的线程函数EventLoopThread::threadFunc
 
   {
-    MutexLockGuard lock(mutex_);
+    MutexLockGuard lock(mutex_); // 使用条件变量，等待eventloop创建
     while (loop_ == NULL)
     {
       cond_.wait();
     }
   }
 
-  return loop_;
+  return loop_; // 返回EventLoop对象
 }
 
 void EventLoopThread::threadFunc()
 {
   EventLoop loop;
 
-  if (callback_)
+  if (callback_) // 如果回调函数不为空
   {
     callback_(&loop);
   }
@@ -63,11 +63,11 @@ void EventLoopThread::threadFunc()
     // loop_指针指向了一个栈上的对象，threadFunc函数退出之后，这个指针就失效了
     // threadFunc函数退出，就意味着线程退出了，EventLoopThread对象也就没有存在的价值了。
     // 因而不会有什么大的问题
-    loop_ = &loop;
-    cond_.notify();
+    loop_ = &loop; // 创建EventLoop对象并将loop_指针指向该对象
+    cond_.notify(); // 通知正在等待的EventLoop对象创建的EventLoopThread::startLoop()函数
   }
 
-  loop.loop();
+  loop.loop(); //开始运行，poll监听关注事件
   //assert(exiting_);
 }
 
