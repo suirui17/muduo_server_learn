@@ -75,10 +75,15 @@ class TcpConnection : boost::noncopyable,
   string name_;				// 连接名
   StateE state_;  // FIXME: use atomic variable
   // we don't expose those classes to client.
+
   boost::scoped_ptr<Socket> socket_;
   boost::scoped_ptr<Channel> channel_;
+
+  // 本地地址和对等方地址
   InetAddress localAddr_;
   InetAddress peerAddr_;
+  
+  // 两个回调函数
   ConnectionCallback connectionCallback_;
   MessageCallback messageCallback_;
 };

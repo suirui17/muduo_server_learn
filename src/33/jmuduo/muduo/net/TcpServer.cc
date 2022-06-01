@@ -24,7 +24,7 @@ using namespace muduo::net;
 TcpServer::TcpServer(EventLoop* loop,
                      const InetAddress& listenAddr,
                      const string& nameArg)
-  : loop_(CHECK_NOTNULL(loop)),
+  : loop_(CHECK_NOTNULL(loop)), // 如果loop为空，则登记一下日志，终止程序
     hostport_(listenAddr.toIpPort()),
     name_(nameArg),
     acceptor_(new Acceptor(loop, listenAddr)),
@@ -55,9 +55,9 @@ void TcpServer::start()
     started_ = true;
   }
 
-  if (!acceptor_->listenning())
+  if (!acceptor_->listenning()) // 是否处于监听的状态
   {
-	// get_pointer返回原生指针
+	// acceptor_是智能指针，get_pointer返回原生指针
     loop_->runInLoop(
         boost::bind(&Acceptor::listen, get_pointer(acceptor_)));
   }
@@ -65,7 +65,7 @@ void TcpServer::start()
 
 void TcpServer::newConnection(int sockfd, const InetAddress& peerAddr)
 {
-  loop_->assertInLoopThread();
+  loop_->assertInLoopThread(); // 断言在I/O线程当中
   char buf[32];
   snprintf(buf, sizeof buf, ":%s#%d", hostport_.c_str(), nextConnId_);
   ++nextConnId_;
@@ -75,6 +75,7 @@ void TcpServer::newConnection(int sockfd, const InetAddress& peerAddr)
            << "] - new connection [" << connName
            << "] from " << peerAddr.toIpPort();
   InetAddress localAddr(sockets::getLocalAddr(sockfd));
+  // 构造一个本地地址 
   // FIXME poll with zero timeout to double confirm the new connection
   // FIXME use make_shared if necessary
   TcpConnectionPtr conn(new TcpConnection(loop_,
@@ -83,6 +84,9 @@ void TcpServer::newConnection(int sockfd, const InetAddress& peerAddr)
                                           localAddr,
                                           peerAddr));
   connections_[connName] = conn;
+  // 将TcpServer的callback注册到TcpConnection中
+  // 即应用程序不会调用TcpConnection的setConnectionCallback和setMessageCallback
+  // 而只会调用TcpServer的setConnectionCallback和setMessageCallback
   conn->setConnectionCallback(connectionCallback_);
   conn->setMessageCallback(messageCallback_);
 

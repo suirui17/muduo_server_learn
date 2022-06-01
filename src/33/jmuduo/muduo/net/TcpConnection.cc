@@ -71,8 +71,9 @@ void TcpConnection::connectEstablished()
   setState(kConnected);
   channel_->tie(shared_from_this());
   channel_->enableReading();	// TcpConnection所对应的通道加入到Poller关注
+  // 监听连接channel，事件到达之后调用message回调函数
 
-  connectionCallback_(shared_from_this());
+  connectionCallback_(shared_from_this()); // 建立连接回调函数
 }
 
 void TcpConnection::handleRead(Timestamp receiveTime)
