@@ -64,6 +64,7 @@ class TcpConnection : boost::noncopyable,
   void send(Buffer* message);  // this one will swap data
   void shutdown(); // NOT thread safe, no simultaneous calling
   void setTcpNoDelay(bool on);
+  // send函数是线程安全的，shutdown函数不是线程安全的
 
   void setConnectionCallback(const ConnectionCallback& cb)
   { connectionCallback_ = cb; }
@@ -104,6 +105,8 @@ class TcpConnection : boost::noncopyable,
   ConnectionCallback connectionCallback_;
   MessageCallback messageCallback_;
   CloseCallback closeCallback_;
+  
+  // 添加两个缓冲区
   Buffer inputBuffer_;			// 应用层接收缓冲区
   Buffer outputBuffer_;			// 应用层发送缓冲区
 };

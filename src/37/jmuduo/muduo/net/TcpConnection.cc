@@ -22,6 +22,7 @@
 using namespace muduo;
 using namespace muduo::net;
 
+// 在TcpServer中设置默认的回调函数
 void muduo::net::defaultConnectionCallback(const TcpConnectionPtr& conn)
 {
   LOG_TRACE << conn->localAddress().toIpPort() << " -> "
@@ -71,6 +72,7 @@ TcpConnection::~TcpConnection()
 }
 
 // 线程安全，可以跨线程调用
+// 转到其所属的线程发送
 void TcpConnection::send(const void* data, size_t len)
 {
   if (state_ == kConnected)
@@ -118,7 +120,7 @@ void TcpConnection::send(Buffer* buf)
     if (loop_->isInLoopThread())
     {
       sendInLoop(buf->peek(), buf->readableBytes());
-      buf->retrieveAll();
+      buf->retrieveAll(); // 将缓冲区中已发送数据移除（修改读指针）
     }
     else
     {
@@ -140,7 +142,9 @@ void TcpConnection::sendInLoop(const void* data, size_t len)
 {
   loop_->assertInLoopThread();
   sockets::write(channel_->fd(), data, len);
-  
+
+  // Buffer类本身不是线程安全的
+  // 每个Buffer是连接私有的
   /*
   loop_->assertInLoopThread();
   ssize_t nwrote = 0;
@@ -197,12 +201,14 @@ void TcpConnection::sendInLoop(const void* data, size_t len)
   */
 }
 
+// 应用层需要发送的数据都发送完毕才能关闭连接
+// 不可以跨线程调用
 void TcpConnection::shutdown()
 {
   // FIXME: use compare and swap
   if (state_ == kConnected)
   {
-    setState(kDisconnecting);
+    setState(kDisconnecting); // 正在断开连接
     // FIXME: shared_from_this()?
     loop_->runInLoop(boost::bind(&TcpConnection::shutdownInLoop, this));
   }
@@ -211,11 +217,17 @@ void TcpConnection::shutdown()
 void TcpConnection::shutdownInLoop()
 {
   loop_->assertInLoopThread();
-  if (!channel_->isWriting())
+  if (!channel_->isWriting()) // channel处于writting状态
+  // 还在关注pollout事件，即Buffer还有数据没有发送完
   {
     // we are not writing
+    // 如果channel已经不关注pollout事件，也就是应用层发送缓冲区数据已经全部写入内核
+    // 则关闭tcp连接的写端
+    // 服务器端主动断开与客户端的连接，客户端read为0，服务器端收到POLLHUP和POLLIN两个事件
+    // 如果是客户端主动关闭连接的话，服务器端只会收到一个POLLIN
     socket_->shutdownWrite();
   }
+  // 如果应用层发送缓冲区仍然有数据，则连接状态更改为kDisconnecting，但是并没有关闭连接
 }
 
 void TcpConnection::setTcpNoDelay(bool on)
