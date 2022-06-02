@@ -87,6 +87,7 @@ TcpClient::~TcpClient()
     // FIXME: not 100% safe, if we are in different thread
 
 	// 重新设置TcpConnection中的closeCallback_为detail::removeConnection
+  // TcpConnection中的closeCallback_具有重连功能
     CloseCallback cb = boost::bind(&detail::removeConnection, loop_, _1);
     loop_->runInLoop(
         boost::bind(&TcpConnection::setCloseCallback, conn, cb));
@@ -123,7 +124,7 @@ void TcpClient::disconnect()
   }
 }
 
-// 停止connector_
+// 连接尚未建立成功，停止connector_
 void TcpClient::stop()
 {
   connect_ = false;
@@ -157,7 +158,8 @@ void TcpClient::newConnection(int sockfd)
     MutexLockGuard lock(mutex_);
     connection_ = conn;		// 保存TcpConnection
   }
-  conn->connectEstablished();		// 这里回调connectionCallback_
+  conn->connectEstablished();		
+  // 关注可读事件 回调connectionCallback_
 }
 
 void TcpClient::removeConnection(const TcpConnectionPtr& conn)
@@ -168,10 +170,11 @@ void TcpClient::removeConnection(const TcpConnectionPtr& conn)
   {
     MutexLockGuard lock(mutex_);
     assert(connection_ == conn);
-    connection_.reset();
+    connection_.reset(); // 连接断开，将保存的TcpConnection重置
   }
 
   loop_->queueInLoop(boost::bind(&TcpConnection::connectDestroyed, conn));
+  // 在I/O线程中调用connectDestroyed
   if (retry_ && connect_)
   {
     LOG_INFO << "TcpClient::connect[" << name_ << "] - Reconnecting to "

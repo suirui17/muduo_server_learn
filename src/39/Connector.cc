@@ -129,6 +129,11 @@ void Connector::restart()
   startInLoop();
 }
 
+// 连接成功或正在连接调用connecting
+// 创建channel并且和sockfd关联
+// 设置channel的写回调函数和错误回调函数
+// 设置poller关注channel的可写事件，调用onnector::handleWrite
+// 连接成功会产生可写事件，d
 void Connector::connecting(int sockfd)
 {
   setState(kConnecting);
@@ -170,7 +175,7 @@ void Connector::handleWrite()
 
   if (state_ == kConnecting)
   {
-    int sockfd = removeAndResetChannel();	// 从poller中移除关注，并将channel置空
+    int sockfd = removeAndResetChannel();	// 从poller中移除关注，并将channel置空，因为连接成功了，就不需要关注channel的可写事件了
     // socket可写并不意味着连接一定建立成功
     // 还需要用getsockopt(sockfd, SOL_SOCKET, SO_ERROR, ...)再次确认一下。
     int err = sockets::getSocketError(sockfd);
@@ -187,10 +192,10 @@ void Connector::handleWrite()
     }
     else	// 连接成功
     {
-      setState(kConnected);
+      setState(kConnected); // 设置连接成功状态
       if (connect_)
       {
-        newConnectionCallback_(sockfd);		// 回调
+        newConnectionCallback_(sockfd);		// 连接成功回调函数
       }
       else
       {
@@ -216,7 +221,8 @@ void Connector::handleError()
   retry(sockfd);
 }
 
-// 采用back-off策略重连，即重连时间逐渐延长，0.5s, 1s, 2s, ...直至30s
+// 连接失败会调用重连函数
+// 采用back-off策略（退避策略）重连，即重连时间逐渐延长，0.5s, 1s, 2s, ...直至30s
 void Connector::retry(int sockfd)
 {
   sockets::close(sockfd);
