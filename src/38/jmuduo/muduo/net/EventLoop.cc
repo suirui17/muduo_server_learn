@@ -22,7 +22,7 @@
 using namespace muduo;
 using namespace muduo::net;
 
-namespace
+namespace // 匿名命名空间
 {
 // 当前线程EventLoop对象指针
 // 线程局部存储
@@ -54,6 +54,7 @@ class IgnoreSigPipe
 #pragma GCC diagnostic error "-Wold-style-cast"
 
 IgnoreSigPipe initObj;
+// 全局对象，在main函数运行之前就会被构建
 }
 
 EventLoop* EventLoop::getEventLoopOfCurrentThread()

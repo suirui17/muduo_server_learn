@@ -157,6 +157,7 @@ void TcpConnection::sendInLoop(const void* data, size_t len)
   }
   // if no thing in output queue, try writing directly
   // 通道没有关注可写事件并且发送缓冲区没有数据，直接write
+  // channel关注可写事件，也就是关注pollout事件，在等待内核产生可写空间
   if (!channel_->isWriting() && outputBuffer_.readableBytes() == 0)
   {
     nwrote = sockets::write(channel_->fd(), data, len);
@@ -166,10 +167,11 @@ void TcpConnection::sendInLoop(const void* data, size_t len)
 	  // 写完了，回调writeCompleteCallback_
       if (remaining == 0 && writeCompleteCallback_)
       {
+        // 所有的数据都写入内核，并且设置了写完成回调函数
         loop_->queueInLoop(boost::bind(writeCompleteCallback_, shared_from_this()));
       }
     }
-    else // nwrote < 0
+    else // nwrote < 0 // 写入出错
     {
       nwrote = 0;
       if (errno != EWOULDBLOCK)
@@ -340,6 +342,8 @@ void TcpConnection::handleWrite()
         if (state_ == kDisconnecting)	// 发送缓冲区已清空并且连接状态是kDisconnecting, 要关闭连接
         {
           shutdownInLoop();		// 关闭连接
+          // 发送缓冲区未清空时调用shutdown，tcp连接不会马上断开，只是将状态设置为kdisconnecting
+          // 当程序将发送缓冲区的数据全部写入内核缓冲区之后，调用shutdownInloop
         }
       }
       else

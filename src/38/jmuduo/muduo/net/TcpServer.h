@@ -100,6 +100,7 @@ class TcpServer : boost::noncopyable
   boost::scoped_ptr<EventLoopThreadPool> threadPool_;
   ConnectionCallback connectionCallback_;
   MessageCallback messageCallback_;
+  // 增加了WriteCompleteCallback，注册回调函数都是通过TcpServer来注册
   WriteCompleteCallback writeCompleteCallback_;		// 数据发送完毕，会回调此函数
   ThreadInitCallback threadInitCallback_;	// IO线程池中的线程在进入事件循环前，会回调用此函数
   bool started_;
