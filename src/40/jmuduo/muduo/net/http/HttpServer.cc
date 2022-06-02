@@ -27,6 +27,7 @@ namespace detail
 {
 
 // FIXME: move to HttpContext class
+// 解析请求行
 bool processRequestLine(const char* begin, const char* end, HttpContext* context)
 {
   bool succeed = false;
@@ -72,7 +73,7 @@ bool parseRequest(Buffer* buf, HttpContext* context, Timestamp receiveTime)
   {
     if (context->expectRequestLine())	// 处于解析请求行状态
     {
-      const char* crlf = buf->findCRLF();
+      const char* crlf = buf->findCRLF(); // 查找\r\n 获得请求行
       if (crlf)
       {
         ok = processRequestLine(buf->peek(), crlf, context);	// 解析请求行
@@ -94,13 +95,14 @@ bool parseRequest(Buffer* buf, HttpContext* context, Timestamp receiveTime)
     }
     else if (context->expectHeaders())		// 解析header
     {
-      const char* crlf = buf->findCRLF();
+      const char* crlf = buf->findCRLF(); // 查抄\r\n 获得header行
       if (crlf)
       {
         const char* colon = std::find(buf->peek(), crlf, ':');		//冒号所在位置
         if (colon != crlf)
         {
           context->request().addHeader(buf->peek(), colon, crlf);
+          // 将<field, value>放入headers的map中
         }
         else
         {
@@ -191,9 +193,12 @@ void HttpServer::onRequest(const TcpConnectionPtr& conn, const HttpRequest& req)
   bool close = connection == "close" ||
     (req.getVersion() == HttpRequest::kHttp10 && connection != "Keep-Alive");
   HttpResponse response(close);
-  httpCallback_(req, &response);
+  // 处理完请求是否要关闭连接
+  httpCallback_(req, &response); // 用户回调函数，对http请求进行相应处理
+  // response对象式一个输入输出参数
   Buffer buf;
   response.appendToBuffer(&buf);
+  // 将response转化为字符串添加到缓冲区中
   conn->send(&buf);
   if (response.closeConnection())
   {

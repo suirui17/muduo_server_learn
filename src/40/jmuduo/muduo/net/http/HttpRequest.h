@@ -53,7 +53,7 @@ class HttpRequest : public muduo::copyable
   bool setMethod(const char* start, const char* end)
   {
     assert(method_ == kInvalid);
-    string m(start, end);
+    string m(start, end); // [start, end)
     if (m == "GET")
     {
       method_ = kGet;
@@ -124,11 +124,14 @@ class HttpRequest : public muduo::copyable
   Timestamp receiveTime() const
   { return receiveTime_; }
 
+// 添加一个头部信息
+// colon是冒号所在的位置
+
   void addHeader(const char* start, const char* colon, const char* end)
   {
     string field(start, colon);		// header域
     ++colon;
-    // 去除左空格
+    // 去除左空格：冒号后的空格
     while (colon < end && isspace(*colon))
     {
       ++colon;

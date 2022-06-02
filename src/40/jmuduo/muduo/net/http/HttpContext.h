@@ -25,10 +25,10 @@ class HttpContext : public muduo::copyable
  public:
   enum HttpRequestParseState
   {
-    kExpectRequestLine,
-    kExpectHeaders,
-    kExpectBody,
-    kGotAll,
+    kExpectRequestLine, // 解析请求行状态
+    kExpectHeaders, // 解析头部状态
+    kExpectBody, // 解析实体状态
+    kGotAll, // 全部解析完毕
   };
 
   HttpContext()
@@ -59,9 +59,9 @@ class HttpContext : public muduo::copyable
   // 重置HttpContext状态
   void reset()
   {
-    state_ = kExpectRequestLine;
+    state_ = kExpectRequestLine; // 设置为初始状态
     HttpRequest dummy;
-    request_.swap(dummy);
+    request_.swap(dummy); // 当前请求置空
   }
 
   const HttpRequest& request() const

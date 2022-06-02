@@ -66,3 +66,8 @@ class HttpServer : boost::noncopyable
 }
 
 #endif  // MUDUO_NET_HTTP_HTTPSERVER_H
+
+/* 当服务器端收到http请求，首先回调OnMessage函数
+ * OnMessage中调用OnRequest
+ * OnRequest回调用户的httpCallback_
+ */

@@ -53,6 +53,7 @@ class HttpResponse : public muduo::copyable
   { return closeConnection_; }
 
   // 设置文档媒体类型（MIME）
+  // contentType：如text/html
   void setContentType(const string& contentType)
   { addHeader("Content-Type", contentType); }
 

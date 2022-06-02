@@ -27,10 +27,12 @@ void HttpResponse::appendToBuffer(Buffer* output) const
   if (closeConnection_)
   {
     // 如果是短连接，不需要告诉浏览器Content-Length，浏览器也能正确处理
+    // 不存在粘包问题
     output->append("Connection: close\r\n");
   }
   else
-  {
+  { 
+    //长连接需要添加实体长度
     snprintf(buf, sizeof buf, "Content-Length: %zd\r\n", body_.size());	// 实体长度
     output->append(buf);
     output->append("Connection: Keep-Alive\r\n");
