@@ -16,3 +16,34 @@ muduoI/O模型使用非阻塞模式，原因：使用阻塞模型，则I/O线程
 
 * 内部以vector of char来保存数据，并提供相应的访问函数
 
+### Buffer数据结构
+
+![](buffer.png)
+
+* 自动增长：增长到需要长度，会出现内存腾挪
+
+![](automatic_growth.png)
+
+![](automatic_growth2.png)
+
+buffer不会缩小，下次写数据不会重新分配内存，写入更大的数据也不一定重新分配内存，因为vector的size和capacity的大小不一定相等
+
+* 内存腾挪
+
+![](memory_shifting.png)
+
+![](memory_shifting2.png)
+
+* prepend：长度可能不是固定8bytes，让程序以很低的代价在数据前面添加几个字节；prepend最少保留8bytes
+
+![](prepend.png)
+
+![](prepend2.png)
+
+### epoll使用LT模式的原因
+
+* 与poll兼容
+
+* LT模式不会发生漏掉事件的bug，但是pollout事件不能一开始就关注，否则会出现busyloop，而应该在write无法完全写入内核缓冲区的时候才关注，将未写入内核缓冲区的数据添加到应用层的输出缓冲区中，直到应用层的输出缓冲区数据全部写完，停止关注pollout事件
+
+* 读写的时候不必等待eagain，可以节省系统调用的次数，降低延迟 
