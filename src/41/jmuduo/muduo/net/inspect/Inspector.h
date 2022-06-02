@@ -53,10 +53,10 @@ class Inspector : boost::noncopyable
   void onRequest(const HttpRequest& req, HttpResponse* resp);
 
   HttpServer server_;
-  boost::scoped_ptr<ProcessInspector> processInspector_;
+  boost::scoped_ptr<ProcessInspector> processInspector_; // proc模块
   MutexLock mutex_;
-  std::map<string, CommandList> commands_;
-  std::map<string, HelpList> helps_;
+  std::map<string, CommandList> commands_; // <模块，命令列表>，访问路径可以看做是命令名称
+  std::map<string, HelpList> helps_; // <模块，帮助列表>，命令帮助信息
 };
 
 }

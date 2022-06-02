@@ -58,19 +58,21 @@ std::vector<string> split(const string& str)
 Inspector::Inspector(EventLoop* loop,
                      const InetAddress& httpAddr,
                      const string& name)
-    : server_(loop, httpAddr, "Inspector:"+name),
+    : server_(loop, httpAddr, "Inspector:"+name), // 初始化一个http服务器
       processInspector_(new ProcessInspector)
 {
-  assert(CurrentThread::isMainThread());
+  assert(CurrentThread::isMainThread()); // 一定是在主线程中构造
   assert(g_globalInspector == 0);
   g_globalInspector = this;
   server_.setHttpCallback(boost::bind(&Inspector::onRequest, this, _1, _2));
+  // 设置http服务器的http回调函数为当前Inspector的OnRequest函数
   processInspector_->registerCommands(this);
   // 这样子做法是为了防止竞态问题
   // 如果直接调用start，（当前线程不是loop所属的IO线程，是主线程）那么有可能，当前构造函数还没返回，
   // HttpServer所在的IO线程可能已经收到了http客户端的请求了（因为这时候HttpServer已启动），那么就会回调
   // Inspector::onRequest，而这时候构造函数还没返回，也就是说对象还没完全构造好
   loop->runAfter(0, boost::bind(&Inspector::start, this)); // little race condition
+  // 设置为0仍然可能存在竞态问题，可以将时间设置为0.1，就不存在竞态问题了
 }
 
 Inspector::~Inspector()
@@ -84,9 +86,10 @@ void Inspector::add(const string& module,
                     const Callback& cb,
                     const string& help)
 {
-  MutexLockGuard lock(mutex_);
+  MutexLockGuard lock(mutex_); // 主线程构造，不会被其他线程访问，可以不用锁
   commands_[module][command] = cb;
   helps_[module][command] = help;
+  // 在命令列表和帮助列表中添加相应信息
 }
 
 void Inspector::start()
@@ -99,7 +102,7 @@ void Inspector::onRequest(const HttpRequest& req, HttpResponse* resp)
   if (req.path() == "/")
   {
     string result;
-    MutexLockGuard lock(mutex_);
+    MutexLockGuard lock(mutex_); // 因为是Inpesctor中是单线程，所以OnRequest和add不会同时调用，因此这里也可不加锁
     // 遍历helps 
     for (std::map<string, HelpList>::const_iterator helpListI = helps_.begin();
          helpListI != helps_.end();
