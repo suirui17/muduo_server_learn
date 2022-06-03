@@ -263,13 +263,6 @@ private:
 };
 ```
 
-### MutexLock
-
-```c++
-```
-
-### Condition
-
 ### Socket
 
 ```c++
@@ -305,7 +298,7 @@ public:
 
 private:
     const int sockfd_;
-}
+};
 ```
 
 ### Channel
@@ -366,7 +359,7 @@ private:
     EventCallback writeCallback_;
     EventCallback closeCallback_;
     EventCallback errorCallback_;
-}
+};
 ```
 
 ### CurrentThread
@@ -395,9 +388,16 @@ public:
     typedef boost::function<void()> Functor;
 
     EventLoop();
-    /* 
+    /* 构造一个默认poller
+     * 构造timerQueue
+     * 创建一个eventfd作为wakeupfd
+     * 创建wakeupChannel和wakeupfd绑定
+     * wakeupChannel_->setReadCallback(boost::bind(&EventLoop::handleRead, this))；
+     * wakeupChannel_->enableReading();
      */
     ~EventLoop();
+    /* 关闭wakeupfd
+     */
 
     void loop();
 
@@ -415,6 +415,8 @@ public:
 
     void wakeup();
     void updateChannel(Channel* channel);		// 在Poller中添加或者更新通道
+    /* poller_->updateChannel(channel);
+     */
     void removeChannel(Channel* channel);		// 从Poller中移除通道
 
 private:
@@ -442,8 +444,46 @@ private:
 
     MutexLock mutex_;
     std::vector<Functor> pendingFunctors_;
-}
+};
 ```
 
+### Epoller
 
+```c++
+class EPoller : public Poller
+{
+public:
+    EpollPoller(EventLoop* loop);
+    /* epollfd_(::epoll_create1(EPOLL_CLOEXEC)),
+     */
+    vitual ~EpollPoller();
+    /* ::close(epollfd_);
+     */
 
+    virtual Timestamp poll(int timeoutMs, ChannelList* activeChannels);
+    /* ::epoll_wait 监听事件
+     * fillActiveChannels(numEvents, activeChannels); 返回活跃通道
+     */
+    virtual void updateChannel(Channel* channel);
+    /* 添加channel、删除channel、修改channel
+     */
+    virtual void removeChannel(Channel* channel);
+    /* 将channel的fd从channels列表中删除
+     * 设置epoll不再关注channel
+     */
+
+private:
+    static const int kInitEventListSize = 16;
+    void fillActiveChannels(int numEvents, ChannelList* activeChannels) const;
+    void update(int operation, Channne* channel);
+    /* 根据调用者给定的操作对poller关注的channel进行修改
+     */
+
+    typedef std::vector<struct epoll_event> EventList;
+    typedef std::map<int, Channel*> ChannelMap;
+
+    int epollfd_;
+    EventList events_;
+    ChannelMap channels_;
+};
+```
