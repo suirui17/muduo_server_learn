@@ -71,7 +71,7 @@ class Socket : boost::noncopyable
   ///
   /// Enable/disable SO_KEEPALIVE
   ///
-  // TCP keepalive是指定期探测连接是否存在，如果应用层有心跳的话，这个选项不是必需要设置的
+  // TCP keepalive是指定其探测连接是否存在，如果应用层有心跳的话，这个选项不是必需要设置的
   void setKeepAlive(bool on);
 
  private:
