@@ -1,5 +1,35 @@
 ## Summary
 
+简单实现muduo网络库的核心代码，在muduo网络库中，整体架构依照reactor模式，即有一个循环过程，监听对应事件是否触发，事件触发时调用对应的回调函数进行处理。
+
+muduo中的事件包括可读可写事件、定时器事件
+
+负责事件循环的部分为`EventLoop`
+
+负责监听时间是否触发的部分是`Poller`，提供了poll和epoll两种实现
+
+负责接收连接并将连接分发到`subReactor`
+
+```
+Tcp网络编程实际上处理的事件包括：
+
+* 连接建立
+* 连接断开：包括主动断开和被动断开
+* 消息到达，也就是文件描述符可读
+* 消息发送完毕
+```
+
+## 连接建立
+
+编写一个简单的EchoServer服务器时，建立连接通常需要四个步骤
+
+```cpp
+1. socket() // 调用socket函数建立监听套接字
+2. bind() // 绑定监听地址和端口
+3. listen() // 开始监听端口
+4. accept() // 返回新建立连接的文件描述符
+```
+
 ### main
 
 ```c++
@@ -9,8 +39,10 @@ int main()
   muduo::net::EventLoop loop;
   muduo::net::InetAddress listenAddr(2007);
   EchoServer server(&loop, listenAddr);
+  // 构建EchoServer
   server.start();
-  loop.loop();
+  
+  咋；azaa'在
 }
 ```
 
@@ -21,6 +53,7 @@ class EchoServer
 {
 public:
     EchoServer(EventLoop* loop, const InetAddress& listenAddr);
+ 		// 构造TcpServer并且设置回调函数为EchoServer中的处理函数
     /* server_.setConnectionCallback(EchoServer::onConnection)
      * server_.setMessageCallback(EchoServer::onMessage)
      */ 
@@ -48,10 +81,13 @@ public:
     typedef boost::function<void(EventLoop*)> ThreadInitCallback;
 
     TcpServer(EventLoop* loop, const InetAddress& listenAddr, const string& nameArg);
-    /* acceptor_(new Acceptor(loop, listenAddr)),
+  	// 构造Acceptor
+    /* 一下为构造函数的初始化列表
+     * acceptor_(new Acceptor(loop, listenAddr)),
      * threadpool_(new EventLoopThreadPool(loop)),
      * connectionCallback_(defaultConnectionCallback),
-     * meaasgeCallback_(defaultMeaasgeCallback),
+     * meaasgeCallback_(defaultMeaasgeCallba
+     * 设置连接建立回调函数
      * acceptor_.setNewConnectionCallback(TcpServer::newConnection);
      */
     ~TcpServer();
@@ -107,8 +143,8 @@ public:
     typedef boost::function<void(int sockfd, const InetAddress&)> NewConnectionCallback;
 
     Acceptor(EventLoop* loop, const InetAddress& listenAddr);
-    /* 构造一个非阻塞的socket
-     * 构造一个Channel，将其和Eventloop和socketfd绑定
+    /* 构造一个非阻塞的socket，并构造一个Socket acceptSocket_(sockets::createNonblockingOrDie()),
+     * 构造一个Channel，将其和Eventloop和socketfd绑定 acceptChannel_(loop, acceptSocket_.fd()),
      * 构造一个空闲文件描述符
      * 
      * acceptSocket_.setReuseAdder();
@@ -485,5 +521,107 @@ private:
     int epollfd_;
     EventList events_;
     ChannelMap channels_;
+};
+```
+
+
+
+
+
+## 客户端
+
+### EchoClient
+
+```cpp
+class EchoClient : boost::noncopyable
+{
+ public:
+  EchoClient(EventLoop* loop, const InetAddress& listenAddr, int size)
+    : loop_(loop),
+      client_(loop, listenAddr, "EchoClient"),
+      message_(size, 'H')
+  {
+    client_.setConnectionCallback(
+        boost::bind(&EchoClient::onConnection, this, _1));
+    client_.setMessageCallback(
+        boost::bind(&EchoClient::onMessage, this, _1, _2, _3));
+    //client_.enableRetry();
+  }
+
+  void connect()
+  {
+    client_.connect();
+  }
+
+ private:
+  void onConnection(const TcpConnectionPtr& conn){}
+
+  void onMessage(const TcpConnectionPtr& conn, Buffer* buf, Timestamp time){}
+
+  EventLoop* loop_;
+  TcpClient client_;
+  string message_;
+};
+```
+
+### TcpClient
+
+```cpp
+class TcpClient : boost::noncopyable
+{
+ public:
+  // TcpClient(EventLoop* loop);
+  // TcpClient(EventLoop* loop, const string& host, uint16_t port);
+  TcpClient(EventLoop* loop,
+            const InetAddress& serverAddr,
+            const string& name);
+  ~TcpClient();  // force out-line dtor, for scoped_ptr members.
+
+  void connect();
+  void disconnect();
+  void stop();
+
+  TcpConnectionPtr connection() const
+  {
+    MutexLockGuard lock(mutex_);
+    return connection_;
+  }
+
+  bool retry() const;
+  void enableRetry() { retry_ = true; }
+
+  /// Set connection callback.
+  /// Not thread safe.
+  void setConnectionCallback(const ConnectionCallback& cb)
+  { connectionCallback_ = cb; }
+
+  /// Set message callback.
+  /// Not thread safe.
+  void setMessageCallback(const MessageCallback& cb)
+  { messageCallback_ = cb; }
+
+  /// Set write complete callback.
+  /// Not thread safe.
+  void setWriteCompleteCallback(const WriteCompleteCallback& cb)
+  { writeCompleteCallback_ = cb; }
+
+ private:
+  /// Not thread safe, but in loop
+  void newConnection(int sockfd);
+  /// Not thread safe, but in loop
+  void removeConnection(const TcpConnectionPtr& conn);
+
+  EventLoop* loop_;
+  ConnectorPtr connector_;	// 用于主动发起连接
+  const string name_;		// 名称
+  ConnectionCallback connectionCallback_;		// 连接建立回调函数
+  MessageCallback messageCallback_;				// 消息到来回调函数
+  WriteCompleteCallback writeCompleteCallback_;	// 数据发送完毕回调函数
+  bool retry_;   // 重连，是指连接建立之后又断开的时候是否重连
+  bool connect_; // atomic
+  // always in loop thread
+  int nextConnId_;			// name_ + nextConnId_用于标识一个连接
+  mutable MutexLock mutex_;
+  TcpConnectionPtr connection_; // Connector连接成功以后，得到一个TcpConnection
 };
 ```
