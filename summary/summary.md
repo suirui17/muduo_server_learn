@@ -19,17 +19,6 @@ Tcp网络编程实际上处理的事件包括：
 * 消息发送完毕
 ```
 
-## 连接建立
-
-编写一个简单的EchoServer服务器时，建立连接通常需要四个步骤
-
-```cpp
-1. socket() // 调用socket函数建立监听套接字
-2. bind() // 绑定监听地址和端口
-3. listen() // 开始监听端口
-4. accept() // 返回新建立连接的文件描述符
-```
-
 ### main
 
 ```c++
@@ -625,3 +614,27 @@ class TcpClient : boost::noncopyable
   TcpConnectionPtr connection_; // Connector连接成功以后，得到一个TcpConnection
 };
 ```
+
+
+
+### muduo的线程模型
+
+muduo默认是单线程模型，即只有一个线程，里面对应一个eventloop，这样对于线程安全的考虑就比较简单了，但是muduo也可以支持以下几种线程模型
+
+#### 主从reactor模式
+
+一个reactor对应一个eventloop，主reactor只有一个，只负责监听新的连接，accept后将这个连接分配到子reactor上，子reactor可以有多个，这样可以分摊eventloop的压力
+
+在muduo中也可以支持主从Reactor，其中主Reactor的EventLoop就是TcpServer的构造函数中的`EventLoop*`参数。Acceptor会在此EventLoop中运行
+
+而子Reactor可以通过`TcpServer::setThreadNum(int)`来设置其个数。因为一个Eventloop只能在一个线程中运行，所以线程的个数就是子Reactor的个数 **TcpServer中的`EventLoopThreadPool`实际上是子reactor线程池**
+
+如果设置了子Reactor，新的连接会通过Round Robin的方式分配给其中一个EventLoop来管理。如果没有设置子Reactor，则是默认的单线程模型，新的连接会再由主Reactor进行管理
+
+#### 业务线程池
+
+对于一些阻塞型或者耗时型的任务，比如MySQL操作等，这些操作放在I/O线程中会严重影响I/O线程的正常工作
+
+对于这类耗时型的任务，一般做法是可以放在另外单独线程池中运行，这样就不会阻塞IO线程的运行了。我们一般把这种处理耗时任务的线程叫做Worker线程
+
+muduo本身没有提供一套直接使用Worker线程池的方式，但是muduo本身提供了线程池的相关类`ThreadPool`。muduo官方的推荐做法是，在OnMessage中，自行进行包的切分，然后将数据和对应的处理函数打包成Task的方式提交给线程池
